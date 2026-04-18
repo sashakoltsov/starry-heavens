@@ -369,6 +369,18 @@
                 </div>
                 <div class="control-group">
                     <div class="label-row">
+                        <label>Horizon Curve <span class="val-badge" id="val-hCurve">100</span></label>
+                    </div>
+                    <input type="range" class="slider ui-input" id="hCurve" min="0" max="100" value="100">
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label>Edge Pinch (Band Width) <span class="val-badge" id="val-edgePinch">0</span></label>
+                    </div>
+                    <input type="range" class="slider ui-input" id="edgePinch" min="0" max="100" value="0">
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
                         <label>Dive In/Out <span class="val-badge" id="val-dive">100</span></label>
                     </div>
                     <input type="range" class="slider ui-input" id="dive" min="0" max="100" value="100">
@@ -505,11 +517,6 @@
         <details>
             <summary>Parallax Layers</summary>
             <div class="details-content">
-                <div class="control-group">
-                    <label>Horizon Scale (Perspective)</label>
-                    <input type="range" class="slider ui-input" id="perspective" min="0" max="100" value="0">
-                </div>
-
                 <div class="layer-box">
                     <h4>Far Layer</h4>
                     <div class="grid-2x2">
@@ -578,6 +585,25 @@
             </div>
         </details>
 
+        <!-- Perspective & Warp -->
+        <details>
+            <summary>Perspective & Warp</summary>
+            <div class="details-content">
+                <div class="control-group">
+                    <div class="label-row">
+                        <label>Horizon Warp Pull <span class="val-badge" id="val-warpPull">50</span></label>
+                    </div>
+                    <input type="range" class="slider ui-input" id="warpPull" min="0" max="100" value="50">
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label>Corner Warp Pull <span class="val-badge" id="val-cornerPull">0</span></label>
+                    </div>
+                    <input type="range" class="slider ui-input" id="cornerPull" min="0" max="100" value="0">
+                </div>
+            </div>
+        </details>
+
         <button class="export-btn" id="exportBtn">Export PNG</button>
     </div>
 
@@ -595,6 +621,7 @@
         
         const formatSel = document.getElementById('format');
         const orientationSel = document.getElementById('orientation');
+        const hCurveRange = document.getElementById('hCurve');
         const diveRange = document.getElementById('dive');
         const panXRange = document.getElementById('panX');
         const panYRange = document.getElementById('panY');
@@ -632,6 +659,31 @@
             let g = Math.round(rgb1.g + (rgb2.g - rgb1.g) * weight);
             let b = Math.round(rgb1.b + (rgb2.b - rgb1.b) * weight);
             return rgbToHex(r, g, b);
+        }
+
+        // Calculates the slope angle and local Y coordinate of the Bezier curve at any X
+        function getCurveData(x, W, cx, y0, y1) {
+            let t;
+            let a = W - 2 * cx;
+            let b = 2 * cx;
+            let c_x = -x;
+            if (Math.abs(a) < 0.001) {
+                t = x / W;
+            } else {
+                let det = b * b - 4 * a * c_x;
+                if(det < 0) det = 0;
+                t = (-b + Math.sqrt(det)) / (2 * a);
+                if (t < 0 || t > 1) t = (-b - Math.sqrt(det)) / (2 * a);
+            }
+            t = Math.max(0, Math.min(1, t));
+
+            let dx = 2 * (1 - t) * cx + 2 * t * (W - cx);
+            let dy = 2 * (1 - t) * (y1 - y0) + 2 * t * (y0 - y1);
+            let angle = Math.atan2(dy, dx);
+            
+            let curveY = (1-t)*(1-t)*y0 + 2*(1-t)*t*y1 + t*t*y0;
+            
+            return { angle, curveY };
         }
 
         function initSpaceObjects() {
@@ -707,14 +759,15 @@
             });
         }
 
-        function drawSpaceLayer(W, H, gradientFill, isTopHalf, cyPeak) {
+        function drawSpaceLayer(W, H, gradientFill, isTopHalf, cx, anchorY, cyCtrl, peakY) {
             ctx.fillStyle = gradientFill;
             ctx.fillRect(0, 0, W, H);
 
             const panX = parseFloat(panXRange.value);
             const panY = parseFloat(panYRange.value);
             const diveShift = parseFloat(diveRange.value);
-            const perspective = parseFloat(document.getElementById('perspective').value);
+            const warpPull = parseFloat(document.getElementById('warpPull').value) / 100;
+            const cornerPullVal = parseFloat(document.getElementById('cornerPull').value) / 100;
             const pseudo3D = document.getElementById('pseudo3D').checked;
             const overrideTog = document.getElementById('overrideTog').checked;
             const overrideColor = document.getElementById('overrideColor').value;
@@ -765,23 +818,60 @@
                 }
 
                 let x = (obj.baseX + (pX / 100)) * W;
-                let y = normalizedY * H;
-
-                // Perspective Scale logic towards Horizon (center Y)
-                let distToCenter = Math.abs(normalizedY - 0.5) * 2; // 0 near horizon, >1 far away
-                let horizonProximity = Math.max(0, Math.min(1, 1 - distToCenter)); 
-                let perspFactor = perspective / 100;
                 
-                // Shrink object toward 'Far' size based on proximity to horizon
-                let horizonShrink = (obj.baseSize - sFarVal) * horizonProximity * perspFactor;
+                // Read current bezier curve angle and deflection offset at object's X
+                let cData = getCurveData(x, W, cx, anchorY, cyCtrl);
+                let deflection = cData.curveY - peakY;
+                
+                // Bend the entire spacefield to wrap around the lens physically
+                let y = normalizedY * H + (deflection * warpPull);
+
+                // --- CORNER WARP PULL LOGIC ---
+                let dxC = x - W/2;
+                let dyC = y - H/2;
+                let xNorm = dxC / (W/2);
+                let yNorm = dyC / (H/2);
+                
+                // Exponentiate to heavily isolate the effect to the deep corners
+                let cornerFactor = Math.pow(Math.abs(xNorm * yNorm), 2); 
+
+                if (cornerPullVal > 0) {
+                    let pullAmt = cornerFactor * cornerPullVal * 0.8; 
+                    x += dxC * pullAmt; // Accelerate outwards
+                    y += dyC * pullAmt; 
+                }
+
+                // Perspective Scale logic towards Horizon
+                let distToCenter = Math.abs(normalizedY - 0.5) * 2; 
+                let horizonProximity = Math.max(0, Math.min(1, 1 - distToCenter)); 
+                
+                // Shrink object toward 'Far' size based on proximity to horizon & warp intensity
+                let horizonShrink = (obj.baseSize - sFarVal) * horizonProximity * warpPull;
                 let finalSize = Math.max(sFarVal * 0.3, obj.size - Math.max(0, horizonShrink));
 
                 ctx.save();
                 ctx.translate(x, y);
-                ctx.rotate(obj.rotation);
                 
+                // Apply Corner Stretch (elongate physically into the corner)
+                if (cornerPullVal > 0 && cornerFactor > 0.01) {
+                    let angleToCorner = Math.atan2(dyC, dxC);
+                    ctx.rotate(angleToCorner);
+                    let pullStretch = 1 + (cornerFactor * cornerPullVal * 6); // Stretch multiplier
+                    ctx.scale(pullStretch, 1);
+                    ctx.rotate(-angleToCorner); // Reset angle so normal curve rotations can apply smoothly
+                }
+
+                // Align object rotation tangent to the bezier curve
+                let warpAngle = cData.angle * warpPull;
+                ctx.rotate(warpAngle);
+                
+                // Tangential stretch for edge-warp perspective projection
+                let tangentStretch = 1 + (Math.abs(warpAngle) * 0.6 * warpPull);
                 let s = (finalSize / 100) * (W / 1200); 
-                ctx.scale(s, s * scaleYSign); 
+                ctx.scale(s * tangentStretch, s * scaleYSign); 
+                
+                // Apply local object rotation
+                ctx.rotate(obj.rotation);
                 
                 // Absolute layer opacity
                 let layerOpacity = opacities[obj.layerId];
@@ -830,6 +920,19 @@
             touchpoint.style.width = `${cssW}px`;
             touchpoint.style.height = `${cssH}px`;
 
+            const hCurveVal = parseFloat(hCurveRange.value);
+            document.getElementById('val-hCurve').innerText = hCurveVal;
+            
+            if(document.getElementById('val-edgePinch')) {
+                document.getElementById('val-edgePinch').innerText = document.getElementById('edgePinch').value;
+            }
+            if(document.getElementById('val-warpPull')) {
+                document.getElementById('val-warpPull').innerText = document.getElementById('warpPull').value;
+            }
+            if(document.getElementById('val-cornerPull')) {
+                document.getElementById('val-cornerPull').innerText = document.getElementById('cornerPull').value;
+            }
+            
             document.getElementById('val-dive').innerText = diveRange.value;
             document.getElementById('val-panX').innerText = panXRange.value;
             document.getElementById('val-panY').innerText = panYRange.value;
@@ -851,13 +954,25 @@
             const baseDepth = (dive / 100) * maxDepth;
 
             const cx = (W / 2) + ((panX / 50) * (W / 2));
-            const shiftY = (panY / 50) * (H / 4); 
+            const shiftY = (panY / 50) * (H / 3); // Increased vertical pan range
 
             let peakTop = baseDepth + shiftY;
             let peakBot = baseDepth - shiftY;
 
-            const cyTop = peakTop * 2;
-            const cyBot = H - (peakBot * 2);
+            // Horizon Curve Logic (dynamic edge anchors)
+            const c = hCurveVal / 100;
+            const flatDepth = H * 0.01; // Significantly flatter curve depth when slider is at 0
+            
+            // Edge Pinch Logic
+            const edgePinchVal = parseFloat(document.getElementById('edgePinch').value) / 100;
+            const maxPinch = (H / 2) - gap;
+            const pinchOffset = edgePinchVal * maxPinch;
+
+            let anchorYTop = pinchOffset * c + (peakTop - flatDepth) * (1 - c);
+            const cyTop = 2 * peakTop - anchorYTop;
+
+            let anchorYBot = (H - pinchOffset) * c + ((H - peakBot) + flatDepth) * (1 - c);
+            const cyBot = 2 * (H - peakBot) - anchorYBot;
 
             // Mixed Gradients
             const c1 = c1Picker.value, c2 = c2Picker.value, c3 = c3Picker.value;
@@ -879,22 +994,28 @@
             botGrad.addColorStop(0.5, c2); botGrad.addColorStop(stopM2, mix2);
             botGrad.addColorStop(1, c3);
 
-            // Draw Top
+            // Draw Top Shape
             ctx.save();
             ctx.beginPath();
-            ctx.moveTo(0, 0); ctx.lineTo(W, 0); ctx.quadraticCurveTo(cx, cyTop, 0, 0);
+            ctx.moveTo(0, 0); 
+            ctx.lineTo(W, 0); 
+            ctx.lineTo(W, anchorYTop);
+            ctx.quadraticCurveTo(cx, cyTop, 0, anchorYTop);
             ctx.closePath();
             ctx.clip(); 
-            drawSpaceLayer(W, H, topGrad, true, cyTop);
+            drawSpaceLayer(W, H, topGrad, true, cx, anchorYTop, cyTop, peakTop);
             ctx.restore();
 
-            // Draw Bottom
+            // Draw Bottom Shape
             ctx.save();
             ctx.beginPath();
-            ctx.moveTo(0, H); ctx.lineTo(W, H); ctx.quadraticCurveTo(cx, cyBot, 0, H);
+            ctx.moveTo(0, H); 
+            ctx.lineTo(W, H); 
+            ctx.lineTo(W, anchorYBot);
+            ctx.quadraticCurveTo(cx, cyBot, 0, anchorYBot);
             ctx.closePath();
             ctx.clip(); 
-            drawSpaceLayer(W, H, botGrad, false, cyBot);
+            drawSpaceLayer(W, H, botGrad, false, cx, anchorYBot, cyBot, H - peakBot);
             ctx.restore();
         }
 
