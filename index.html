@@ -475,7 +475,7 @@
                     <div class="label-row">
                         <label>Mouse Pan (Hover)</label>
                         <label class="toggle-switch">
-                            <input type="checkbox" id="mousePanTog" class="ui-input" checked>
+                            <input type="checkbox" id="mousePanTog" class="ui-input">
                             <span class="slider-tog"></span>
                         </label>
                     </div>
@@ -789,8 +789,8 @@
         }
 
         function initSpaceObjects() {
-            // Multiply internally by 3 to maintain thick visual density across the massive expanded off-screen grid
-            const total = parseInt(document.getElementById('totalCount').value) * 3; 
+            // Multiply internally by 5 to maintain thick visual density across the massive expanded off-screen grid
+            const total = parseInt(document.getElementById('totalCount').value) * 5; 
             const noise = parseInt(document.getElementById('noise').value);
             const wFar = parseInt(document.getElementById('wFar').value);
             const wMid = parseInt(document.getElementById('wMid').value);
@@ -894,13 +894,6 @@
 
             // Render objects
             spaceObjects.forEach(obj => {
-                // If reflection is ON, bottom layer physically mirrors top layer
-                if (reflectTog) {
-                    if (!obj.isTop) return; 
-                } else {
-                    if (obj.isTop !== isTopHalf) return;
-                }
-
                 let pX = panX * obj.pFactor;
                 let pY = panY * obj.pFactor;
                 let dY = diveShift * obj.pFactor * 0.003; 
@@ -916,13 +909,21 @@
                 let normalizedY;
                 let scaleYSign = 1;
 
-                if (isTopHalf) {
-                    normalizedY = obj.baseY + (pY / 100) - dY;
-                } else {
-                    if (reflectTog) {
-                        let topNormY = obj.baseY + (pY / 100) - dY;
+                if (reflectTog) {
+                    if (!obj.isTop) return; // In reflection mode, strictly mirror top objects
+                    
+                    let topNormY = obj.baseY + (pY / 100) - dY;
+                    if (isTopHalf) {
+                        normalizedY = topNormY;
+                    } else {
                         normalizedY = 1.0 - topNormY;
                         scaleYSign = -1;
+                    }
+                } else {
+                    // UNIFIED SPACE: Draw all objects in BOTH halves!
+                    // The Bezier clipping masks will perfectly stitch them together at the horizon
+                    if (obj.isTop) {
+                        normalizedY = obj.baseY + (pY / 100) - dY;
                     } else {
                         normalizedY = obj.baseY + (pY / 100) + dY;
                     }
@@ -1001,6 +1002,17 @@
                 let perspSize = Math.max(sFarVal * 0.3, obj.size - Math.max(0, horizonShrink));
                 let finalSize = perspSize * diveScaleMultiplier;
 
+                let warpAngle = cData.angle * warpPull;
+                let tangentStretch = 1 + (Math.abs(warpAngle) * 0.6 * warpPull);
+                let s = (finalSize / 100) * (W / 1200); 
+                
+                // Performance Culling: Skip drawing if object is entirely off-screen to save CPU
+                let pullStretch = (cornerPullVal > 0 && cornerFactor > 0.01) ? 1 + (cornerFactor * cornerPullVal * 6) : 1;
+                let maxRadius = 350 * s * Math.max(tangentStretch, pullStretch);
+                if (x + maxRadius < 0 || x - maxRadius > W || y + maxRadius < 0 || y - maxRadius > H) {
+                    return; 
+                }
+
                 ctx.save();
                 ctx.translate(x, y);
                 
@@ -1008,18 +1020,12 @@
                 if (cornerPullVal > 0 && cornerFactor > 0.01) {
                     let angleToCorner = Math.atan2(dyC, dxC);
                     ctx.rotate(angleToCorner);
-                    let pullStretch = 1 + (cornerFactor * cornerPullVal * 6); 
                     ctx.scale(pullStretch, 1);
                     ctx.rotate(-angleToCorner); 
                 }
 
                 // Align object rotation tangent to the bezier curve
-                let warpAngle = cData.angle * warpPull;
                 ctx.rotate(warpAngle);
-                
-                // Tangential stretch for edge-warp perspective projection
-                let tangentStretch = 1 + (Math.abs(warpAngle) * 0.6 * warpPull);
-                let s = (finalSize / 100) * (W / 1200); 
                 ctx.scale(s * tangentStretch, s * scaleYSign); 
                 
                 // Apply local object rotation
