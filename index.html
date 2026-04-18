@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Landscape Graphic Generator</title>
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #222222;
+            --bg-group: #1a1a1a;
+            --accent: #46ABDD;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+        }
+
+        body {
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow: hidden;
+        }
+
+        /* Control Panel */
+        #panel {
+            width: 360px;
+            min-width: 360px;
+            background-color: var(--bg-panel);
+            padding: 24px 16px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 10;
+        }
+
+        h2 {
+            margin: 0 0 10px 4px;
+            font-size: 18px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Collapsible Groups */
+        details {
+            background: var(--bg-group);
+            border: 1px solid #333;
+            border-radius: 6px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        summary {
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            cursor: pointer;
+            background: #252525;
+            user-select: none;
+            outline: none;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        summary:hover {
+            background: #2a2a2a;
+            color: #fff;
+        }
+
+        summary::after {
+            content: '▼';
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+
+        details[open] summary::after {
+            transform: rotate(-180deg);
+        }
+
+        .details-content {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Forms & Inputs */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .val-badge {
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #fff;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        select {
+            width: 100%;
+            box-sizing: border-box;
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 8px;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"].slider {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        button.reset-btn {
+            background: none;
+            border: 1px solid #555;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 11px;
+            padding: 2px 6px;
+            transition: 0.2s;
+        }
+
+        button.reset-btn:hover {
+            background: #444;
+            color: #fff;
+        }
+
+        /* Color Circle */
+        .color-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        input[type="color"].circle-picker {
+            -webkit-appearance: none;
+            border: 2px solid #555;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            padding: 0;
+            cursor: pointer;
+            background: transparent;
+            flex-shrink: 0;
+            transition: transform 0.1s;
+        }
+
+        input[type="color"].circle-picker.small-picker {
+            width: 18px;
+            height: 18px;
+            border-width: 1px;
+        }
+
+        input[type="color"].circle-picker:hover {
+            transform: scale(1.1);
+            border-color: #fff;
+        }
+
+        input[type="color"].circle-picker::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"].circle-picker::-webkit-color-swatch { border: none; border-radius: 50%; }
+
+        /* Custom Checkbox Toggle */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 18px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider-tog {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #444; transition: .2s; border-radius: 18px;
+        }
+        .slider-tog:before {
+            position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
+            background-color: white; transition: .2s; border-radius: 50%;
+        }
+        input:checked + .slider-tog { background-color: var(--accent); }
+        input:checked + .slider-tog:before { transform: translateX(16px); }
+
+        /* Custom Gradient Distribution Widget */
+        .grad-row {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: #111;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 1px solid #333;
+        }
+
+        .grad-track {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            right: 20px;
+            height: 2px;
+            background: #444;
+            z-index: 1;
+            transform: translateY(-50%);
+        }
+
+        .grad-item {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .flex-grow {
+            flex: 1;
+            padding: 0 8px;
+        }
+
+        input[type="range"].mid-dot {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 2px;
+            background: transparent;
+            cursor: ew-resize;
+            margin: 0;
+        }
+
+        input[type="range"].mid-dot::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            transition: 0.2s;
+            border: 2px solid #111;
+        }
+
+        input[type="range"].mid-dot::-webkit-slider-thumb:hover {
+            background: #fff;
+            transform: scale(1.3);
+        }
+
+        /* 2x2 Grid Layout for Layers */
+        .grid-2x2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 10px;
+            text-align: center;
+        }
+        .grid-2x2 .control-group { align-items: center; }
+        
+        /* Layer Box Styling */
+        .layer-box {
+            background: #222;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            margin-bottom: 4px;
+        }
+        .layer-box h4 {
+            margin: 0 0 10px 0;
+            font-size: 11px;
+            color: #fff;
+            text-transform: uppercase;
+        }
+        .layer-box label {
+            font-size: 10px;
+        }
+
+        button.export-btn {
+            background-color: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+        button.export-btn:hover { background-color: #1E9CD7; }
+
+        /* Preview Area */
+        #preview-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            box-sizing: border-box;
+            background-color: #1a1a1a;
+            overflow: hidden;
+        }
+
+        #touchpoint {
+            transition: width 0.2s, height 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: transparent;
+            cursor: grab;
+        }
+        #touchpoint:active { cursor: grabbing; }
+        canvas {
+            display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="panel">
+        <h2>Controls</h2>
+
+        <!-- Camera & Layout -->
+        <details open>
+            <summary>Camera & Layout</summary>
+            <div class="details-content">
+                <div class="control-group">
+                    <label>Format</label>
+                    <select id="format" class="ui-input">
+                        <option value="1:1">1:1 (Square)</option>
+                        <option value="4:5">4:5 (Portrait)</option>
+                        <option value="3:4">3:4</option>
+                        <option value="2:3">2:3</option>
+                        <option value="9:16">9:16 (Story)</option>
+                        <option value="1:2">1:2</option>
+                        <option value="16:9" selected>16:9 (Landscape)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Orientation</label>
+                    <select id="orientation" class="ui-input">
+                        <option value="horizontal" selected>Horizontal</option>
+                        <option value="vertical">Vertical</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label>Dive In/Out <span class="val-badge" id="val-dive">100</span></label>
+                    </div>
+                    <input type="range" class="slider ui-input" id="dive" min="0" max="100" value="100">
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label>Pan Left/Right <span class="val-badge" id="val-panX">0</span></label>
+                        <button class="reset-btn" onclick="resetSlider('panX')">Reset</button>
+                    </div>
+                    <input type="range" class="slider ui-input" id="panX" min="-50" max="50" value="0">
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label>Pan Up/Down <span class="val-badge" id="val-panY">0</span></label>
+                        <button class="reset-btn" onclick="resetSlider('panY')">Reset</button>
+                    </div>
+                    <input type="range" class="slider ui-input" id="panY" min="-50" max="50" value="0">
+                </div>
+                <div class="control-group" style="padding-top: 12px; margin-top: 4px; border-top: 1px solid #333;">
+                    <div class="label-row">
+                        <label>Mouse Pan (Hover)</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="mousePanTog" class="ui-input" checked>
+                            <span class="slider-tog"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- Colors & Gradient -->
+        <details open>
+            <summary>Colors & Masks</summary>
+            <div class="details-content">
+                <div class="control-group">
+                    <div class="color-row">
+                        <label>Background Color</label>
+                        <input type="color" class="circle-picker ui-input" id="bgColor" value="#050505">
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label>Gradient Distribution</label>
+                    <div class="grad-row">
+                        <div class="grad-track"></div>
+                        <div class="grad-item"><input type="color" id="c1" class="circle-picker ui-input" value="#000000"></div>
+                        <div class="grad-item flex-grow"><input type="range" id="m1" class="mid-dot ui-input" min="0" max="100" value="50"></div>
+                        <div class="grad-item"><input type="color" id="c2" class="circle-picker ui-input" value="#2f1104"></div>
+                        <div class="grad-item flex-grow"><input type="range" id="m2" class="mid-dot ui-input" min="0" max="100" value="50"></div>
+                        <div class="grad-item"><input type="color" id="c3" class="circle-picker ui-input" value="#3d1d96"></div>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- Object Shapes Mix -->
+        <details>
+            <summary>Shapes Mix</summary>
+            <div class="details-content">
+                <div class="control-group">
+                    <label>Total Density</label>
+                    <input type="range" class="slider gen-input" id="totalCount" min="0" max="500" value="300">
+                </div>
+                <div class="control-group">
+                    <label>Distribution Noise (Uniform to Clustered)</label>
+                    <input type="range" class="slider gen-input" id="noise" min="0" max="100" value="50">
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label>Inner Shadow (3D)</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="pseudo3D" class="ui-input">
+                            <span class="slider-tog"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label><input type="color" id="overrideColor" class="circle-picker small-picker ui-input" value="#0000ff"> Override Colors</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="overrideTog" class="ui-input" checked>
+                            <span class="slider-tog"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="control-group" style="padding-top: 12px; margin-top: 4px; border-top: 1px solid #333;">
+                    <div class="label-row">
+                        <label>Reflect Bottom Half</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="reflectTog" class="ui-input" checked>
+                            <span class="slider-tog"></span>
+                        </label>
+                    </div>
+                </div>
+                <label style="margin-top: 10px;">Shape Weights & Colors</label>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label><input type="color" id="sc0" class="circle-picker small-picker ui-input" value="#0000ff"> Circle</label>
+                        <span class="val-badge" id="v-s0">20</span>
+                    </div>
+                    <input type="range" class="slider gen-input shape-val" data-target="v-s0" id="shape0" min="0" max="100" value="20">
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label><input type="color" id="sc1" class="circle-picker small-picker ui-input" value="#0000ff"> Diamond</label>
+                        <span class="val-badge" id="v-s1">20</span>
+                    </div>
+                    <input type="range" class="slider gen-input shape-val" data-target="v-s1" id="shape1" min="0" max="100" value="20">
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label><input type="color" id="sc2" class="circle-picker small-picker ui-input" value="#0000ff"> Ellipse</label>
+                        <span class="val-badge" id="v-s2">20</span>
+                    </div>
+                    <input type="range" class="slider gen-input shape-val" data-target="v-s2" id="shape2" min="0" max="100" value="20">
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label><input type="color" id="sc3" class="circle-picker small-picker ui-input" value="#0000ff"> Star</label>
+                        <span class="val-badge" id="v-s3">20</span>
+                    </div>
+                    <input type="range" class="slider gen-input shape-val" data-target="v-s3" id="shape3" min="0" max="100" value="20">
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label><input type="color" id="sc4" class="circle-picker small-picker ui-input" value="#0000ff"> Stacks</label>
+                        <span class="val-badge" id="v-s4">20</span>
+                    </div>
+                    <input type="range" class="slider gen-input shape-val" data-target="v-s4" id="shape4" min="0" max="100" value="20">
+                </div>
+            </div>
+        </details>
+
+        <!-- Parallax Layers -->
+        <details>
+            <summary>Parallax Layers</summary>
+            <div class="details-content">
+                <div class="control-group">
+                    <label>Horizon Scale (Perspective)</label>
+                    <input type="range" class="slider ui-input" id="perspective" min="0" max="100" value="0">
+                </div>
+
+                <div class="layer-box">
+                    <h4>Far Layer</h4>
+                    <div class="grid-2x2">
+                        <div class="control-group">
+                            <label>Weight</label>
+                            <input type="range" class="slider gen-input" id="wFar" min="0" max="100" value="75">
+                        </div>
+                        <div class="control-group">
+                            <label>Size</label>
+                            <input type="range" class="slider gen-input" id="sFar" min="1" max="50" value="20">
+                        </div>
+                        <div class="control-group">
+                            <label>Size Noise</label>
+                            <input type="range" class="slider gen-input" id="snFar" min="0" max="100" value="30">
+                        </div>
+                        <div class="control-group">
+                            <label>Opacity</label>
+                            <input type="range" class="slider ui-input" id="oFar" min="0" max="100" value="90">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layer-box">
+                    <h4>Mid Layer</h4>
+                    <div class="grid-2x2">
+                        <div class="control-group">
+                            <label>Weight</label>
+                            <input type="range" class="slider gen-input" id="wMid" min="0" max="100" value="35">
+                        </div>
+                        <div class="control-group">
+                            <label>Size</label>
+                            <input type="range" class="slider gen-input" id="sMid" min="5" max="100" value="50">
+                        </div>
+                        <div class="control-group">
+                            <label>Size Noise</label>
+                            <input type="range" class="slider gen-input" id="snMid" min="0" max="100" value="55">
+                        </div>
+                        <div class="control-group">
+                            <label>Opacity</label>
+                            <input type="range" class="slider ui-input" id="oMid" min="0" max="100" value="90">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layer-box">
+                    <h4>Close Layer</h4>
+                    <div class="grid-2x2">
+                        <div class="control-group">
+                            <label>Weight</label>
+                            <input type="range" class="slider gen-input" id="wClose" min="0" max="100" value="15">
+                        </div>
+                        <div class="control-group">
+                            <label>Size</label>
+                            <input type="range" class="slider gen-input" id="sClose" min="10" max="200" value="60">
+                        </div>
+                        <div class="control-group">
+                            <label>Size Noise</label>
+                            <input type="range" class="slider gen-input" id="snClose" min="0" max="100" value="60">
+                        </div>
+                        <div class="control-group">
+                            <label>Opacity</label>
+                            <input type="range" class="slider ui-input" id="oClose" min="0" max="100" value="90">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <button class="export-btn" id="exportBtn">Export PNG</button>
+    </div>
+
+    <div id="preview-area">
+        <div id="touchpoint">
+            <canvas id="canvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const touchpoint = document.getElementById('touchpoint');
+        const previewArea = document.getElementById('preview-area');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        const formatSel = document.getElementById('format');
+        const orientationSel = document.getElementById('orientation');
+        const diveRange = document.getElementById('dive');
+        const panXRange = document.getElementById('panX');
+        const panYRange = document.getElementById('panY');
+        const mousePanTog = document.getElementById('mousePanTog');
+        
+        const bgColorPicker = document.getElementById('bgColor');
+        const c1Picker = document.getElementById('c1');
+        const m1Slider = document.getElementById('m1');
+        const c2Picker = document.getElementById('c2');
+        const m2Slider = document.getElementById('m2');
+        const c3Picker = document.getElementById('c3');
+
+        const pathDefs = [
+            { d: "M263.48 87.05C282.749 87.05 298.37 71.4292 298.37 52.16C298.37 32.8908 282.749 17.27 263.48 17.27C244.211 17.27 228.59 32.8908 228.59 52.16C228.59 71.4292 244.211 87.05 263.48 87.05Z", cx: 263.48, cy: 52.16 }, 
+            { d: "M183.14 42.1366L162.344 21.3406C156.814 15.8107 147.848 15.8107 142.318 21.3406L121.522 42.1366C115.992 47.6664 115.992 56.632 121.522 62.1618L142.318 82.9578C147.848 88.4877 156.814 88.4877 162.344 82.9578L183.14 62.1618C188.669 56.632 188.669 47.6664 183.14 42.1366Z", cx: 152.33, cy: 52.15 }, 
+            { d: "M363.12 104.32C374.458 104.32 383.65 80.9672 383.65 52.16C383.65 23.3528 374.458 0 363.12 0C351.782 0 342.59 23.3528 342.59 52.16C342.59 80.9672 351.782 104.32 363.12 104.32Z", cx: 363.12, cy: 52.16 }, 
+            { d: "M514.92 52.16C514.92 44.58 502.96 38.11 486.08 35.49C483.46 18.6 476.99 6.64999 469.41 6.64999C461.83 6.64999 455.36 18.61 452.74 35.49C435.85 38.11 423.9 44.58 423.9 52.16C423.9 59.74 435.86 66.21 452.74 68.83C455.36 85.72 461.83 97.67 469.41 97.67C476.99 97.67 483.46 85.71 486.08 68.83C502.97 66.21 514.92 59.74 514.92 52.16Z", cx: 469.41, cy: 52.16 }, 
+            { d: "M69.06 52.95C69.06 49 65.03 45.43 58.55 42.88C65.03 40.33 69.06 36.76 69.06 32.81C69.06 25.06 53.6 18.78 34.53 18.78C15.46 18.78 0 25.05 0 32.8C0 36.75 4.03 40.32 10.51 42.87C4.03 45.42 0 48.99 0 52.94C0 56.89 4.03 60.46 10.51 63.01C4.03 65.56 0 69.13 0 73.08C0 80.83 15.46 87.11 34.53 87.11C53.6 87.11 69.06 80.83 69.06 73.08C69.06 69.13 65.03 65.56 58.55 63.01C65.03 60.46 69.06 56.89 69.06 52.94V52.95Z", cx: 34.53, cy: 52.95 } 
+        ];
+        const path2DInstances = pathDefs.map(p => new Path2D(p.d));
+
+        const EXPORT_RESOLUTION = 2400;
+        let spaceObjects = [];
+
+        function hexToRgb(hex) {
+            let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+            return {r, g, b};
+        }
+        function rgbToHex(r, g, b) {
+            return "#" + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+        }
+        function mixColors(color1, color2, weight) {
+            let rgb1 = hexToRgb(color1), rgb2 = hexToRgb(color2);
+            let r = Math.round(rgb1.r + (rgb2.r - rgb1.r) * weight);
+            let g = Math.round(rgb1.g + (rgb2.g - rgb1.g) * weight);
+            let b = Math.round(rgb1.b + (rgb2.b - rgb1.b) * weight);
+            return rgbToHex(r, g, b);
+        }
+
+        function initSpaceObjects() {
+            const total = parseInt(document.getElementById('totalCount').value);
+            const noise = parseInt(document.getElementById('noise').value);
+            const wFar = parseInt(document.getElementById('wFar').value);
+            const wMid = parseInt(document.getElementById('wMid').value);
+            const wClose = parseInt(document.getElementById('wClose').value);
+            const sumLayers = wFar + wMid + wClose || 1;
+
+            const shapeWeights = [
+                parseInt(document.getElementById('shape0').value),
+                parseInt(document.getElementById('shape1').value),
+                parseInt(document.getElementById('shape2').value),
+                parseInt(document.getElementById('shape3').value),
+                parseInt(document.getElementById('shape4').value)
+            ];
+            const sumShapes = shapeWeights.reduce((a,b) => a+b, 0) || 1;
+
+            spaceObjects = [];
+
+            const layers = [
+                { id: 'far', weight: wFar, baseSizeId: 'sFar', snId: 'snFar', pFactor: 0.2 },
+                { id: 'mid', weight: wMid, baseSizeId: 'sMid', snId: 'snMid', pFactor: 0.6 },
+                { id: 'close', weight: wClose, baseSizeId: 'sClose', snId: 'snClose', pFactor: 1.3 }
+            ];
+
+            layers.forEach(layer => {
+                const layerCount = Math.floor(total * (layer.weight / sumLayers));
+                const snVal = parseFloat(document.getElementById(layer.snId).value) / 100;
+                
+                [true, false].forEach(isTop => {
+                    const halfCount = Math.floor(layerCount / 2);
+                    if (halfCount <= 0) return;
+
+                    // Create Grid for structured distribution
+                    const cols = Math.ceil(Math.sqrt(halfCount * 3));
+                    const rows = Math.ceil(halfCount / cols);
+                    
+                    const gw = 2.0 / cols; // x span [-0.5, 1.5]
+                    const gh = 1.1 / rows; // Increased vertical spread to cover center fully when panning
+
+                    for(let i=0; i<halfCount; i++) {
+                        let r = Math.floor(i / cols);
+                        let c = i % cols;
+
+                        // Shape Selection
+                        let rndS = Math.random() * sumShapes;
+                        let shapeId = 0, currentWeight = 0;
+                        for(let j=0; j<5; j++) {
+                            currentWeight += shapeWeights[j];
+                            if(rndS < currentWeight) { shapeId = j; break; }
+                        }
+
+                        // Jitter based on Noise Slider
+                        let jx = (Math.random() - 0.5) * gw * (noise / 100) * 1.8;
+                        let jy = (Math.random() - 0.5) * gh * (noise / 100) * 1.8;
+
+                        let baseX = -0.5 + (c + 0.5) * gw + jx;
+                        let baseY = (isTop ? -0.2 : 0.1) + (r + 0.5) * gh + jy;
+
+                        let baseSize = parseFloat(document.getElementById(layer.baseSizeId).value);
+                        let size = baseSize * (1 + (Math.random() * 2 - 1) * snVal); // Jitter by size noise
+                        size = Math.max(baseSize * 0.1, size); // Prevent dropping below a tiny visible minimum
+                        let rotation = Math.random() * Math.PI * 2;
+
+                        spaceObjects.push({ 
+                            shapeId, baseX, baseY, pFactor: layer.pFactor, 
+                            size, baseSize, isTop, rotation, layerId: layer.id 
+                        });
+                    }
+                });
+            });
+        }
+
+        function drawSpaceLayer(W, H, gradientFill, isTopHalf, cyPeak) {
+            ctx.fillStyle = gradientFill;
+            ctx.fillRect(0, 0, W, H);
+
+            const panX = parseFloat(panXRange.value);
+            const panY = parseFloat(panYRange.value);
+            const diveShift = parseFloat(diveRange.value);
+            const perspective = parseFloat(document.getElementById('perspective').value);
+            const pseudo3D = document.getElementById('pseudo3D').checked;
+            const overrideTog = document.getElementById('overrideTog').checked;
+            const overrideColor = document.getElementById('overrideColor').value;
+            const reflectTog = document.getElementById('reflectTog').checked;
+            const sFarVal = parseFloat(document.getElementById('sFar').value);
+            
+            const opacities = {
+                far: parseFloat(document.getElementById('oFar').value) / 100,
+                mid: parseFloat(document.getElementById('oMid').value) / 100,
+                close: parseFloat(document.getElementById('oClose').value) / 100
+            };
+
+            const shapeColors = [
+                document.getElementById('sc0').value,
+                document.getElementById('sc1').value,
+                document.getElementById('sc2').value,
+                document.getElementById('sc3').value,
+                document.getElementById('sc4').value
+            ];
+
+            // Render objects
+            spaceObjects.forEach(obj => {
+                // If reflection is ON, bottom layer physically mirrors top layer
+                if (reflectTog) {
+                    if (!obj.isTop) return; 
+                } else {
+                    if (obj.isTop !== isTopHalf) return;
+                }
+
+                let pX = panX * obj.pFactor;
+                let pY = panY * obj.pFactor;
+                let dY = diveShift * obj.pFactor * 0.003; 
+                
+                let normalizedY;
+                let scaleYSign = 1;
+
+                if (isTopHalf) {
+                    normalizedY = obj.baseY + (pY / 100) - dY;
+                } else {
+                    if (reflectTog) {
+                        // Mathematically mirror the top coordinate across the horizon (0.5)
+                        let topNormY = obj.baseY + (pY / 100) - dY;
+                        normalizedY = 1.0 - topNormY;
+                        scaleYSign = -1; // Draw shape physically mirrored
+                    } else {
+                        normalizedY = obj.baseY + (pY / 100) + dY;
+                    }
+                }
+
+                let x = (obj.baseX + (pX / 100)) * W;
+                let y = normalizedY * H;
+
+                // Perspective Scale logic towards Horizon (center Y)
+                let distToCenter = Math.abs(normalizedY - 0.5) * 2; // 0 near horizon, >1 far away
+                let horizonProximity = Math.max(0, Math.min(1, 1 - distToCenter)); 
+                let perspFactor = perspective / 100;
+                
+                // Shrink object toward 'Far' size based on proximity to horizon
+                let horizonShrink = (obj.baseSize - sFarVal) * horizonProximity * perspFactor;
+                let finalSize = Math.max(sFarVal * 0.3, obj.size - Math.max(0, horizonShrink));
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(obj.rotation);
+                
+                let s = (finalSize / 100) * (W / 1200); 
+                ctx.scale(s, s * scaleYSign); 
+                
+                // Absolute layer opacity
+                let layerOpacity = opacities[obj.layerId];
+                ctx.globalAlpha = layerOpacity;
+
+                ctx.translate(-pathDefs[obj.shapeId].cx, -pathDefs[obj.shapeId].cy);
+                
+                // 1. Fill base shape color
+                ctx.fillStyle = overrideTog ? overrideColor : shapeColors[obj.shapeId];
+                ctx.fill(path2DInstances[obj.shapeId]);
+
+                // 2. Inner Shadow / Pseudo 3D Effect Overlay
+                if (pseudo3D) {
+                    let gw = pathDefs[obj.shapeId].cx * 2;
+                    let gh = pathDefs[obj.shapeId].cy * 2;
+                    let g = ctx.createLinearGradient(0, 0, gw, gh);
+                    
+                    g.addColorStop(0, 'rgba(255,255,255,0.6)');
+                    g.addColorStop(1, 'rgba(0,0,0,0.5)');
+                    
+                    ctx.fillStyle = g;
+                    ctx.fill(path2DInstances[obj.shapeId]);
+                }
+
+                ctx.restore();
+            });
+        }
+
+        function updateGraphic() {
+            let [ratioW, ratioH] = formatSel.value.split(':').map(Number);
+            if (orientationSel.value === 'vertical') [ratioW, ratioH] = [ratioH, ratioW];
+            const aspect = ratioW / ratioH;
+            
+            let W = aspect >= 1 ? EXPORT_RESOLUTION : EXPORT_RESOLUTION * aspect;
+            let H = aspect >= 1 ? EXPORT_RESOLUTION / aspect : EXPORT_RESOLUTION;
+            canvas.width = W; canvas.height = H;
+
+            // Responsive sizing with 25px margins
+            const paRect = previewArea.getBoundingClientRect();
+            const maxCssW = paRect.width - 50; 
+            const maxCssH = paRect.height - 50;
+
+            let cssW = maxCssW, cssH = maxCssW / aspect;
+            if (cssH > maxCssH) { cssH = maxCssH; cssW = maxCssH * aspect; }
+            
+            touchpoint.style.width = `${cssW}px`;
+            touchpoint.style.height = `${cssH}px`;
+
+            document.getElementById('val-dive').innerText = diveRange.value;
+            document.getElementById('val-panX').innerText = panXRange.value;
+            document.getElementById('val-panY').innerText = panYRange.value;
+            document.querySelectorAll('.shape-val').forEach(el => {
+                document.getElementById(el.dataset.target).innerText = el.value;
+            });
+
+            const dive = parseFloat(diveRange.value);
+            const panX = parseFloat(panXRange.value);
+            const panY = parseFloat(panYRange.value);
+
+            // Dark Background
+            ctx.fillStyle = bgColorPicker.value;
+            ctx.fillRect(0, 0, W, H);
+
+            // Bezier constraint math
+            const gap = H * 0.02; 
+            const maxDepth = (H / 2) - gap; 
+            const baseDepth = (dive / 100) * maxDepth;
+
+            const cx = (W / 2) + ((panX / 50) * (W / 2));
+            const shiftY = (panY / 50) * (H / 4); 
+
+            let peakTop = baseDepth + shiftY;
+            let peakBot = baseDepth - shiftY;
+
+            const cyTop = peakTop * 2;
+            const cyBot = H - (peakBot * 2);
+
+            // Mixed Gradients
+            const c1 = c1Picker.value, c2 = c2Picker.value, c3 = c3Picker.value;
+            const m1Pos = parseFloat(m1Slider.value) / 100;
+            const m2Pos = parseFloat(m2Slider.value) / 100;
+            
+            const mix1 = mixColors(c1, c2, 0.5), mix2 = mixColors(c2, c3, 0.5);
+            const stopM1 = 0 + (0.5 - 0) * m1Pos;
+            const stopM2 = 0.5 + (1.0 - 0.5) * m2Pos;
+
+            // Dynamically stretch gradients to the actual visible peak of the bezier curve
+            let topGrad = ctx.createLinearGradient(0, 0, 0, Math.max(1, peakTop));
+            topGrad.addColorStop(0, c1); topGrad.addColorStop(stopM1, mix1);
+            topGrad.addColorStop(0.5, c2); topGrad.addColorStop(stopM2, mix2);
+            topGrad.addColorStop(1, c3);
+
+            let botGrad = ctx.createLinearGradient(0, H, 0, Math.min(H - 1, H - peakBot));
+            botGrad.addColorStop(0, c1); botGrad.addColorStop(stopM1, mix1);
+            botGrad.addColorStop(0.5, c2); botGrad.addColorStop(stopM2, mix2);
+            botGrad.addColorStop(1, c3);
+
+            // Draw Top
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(0, 0); ctx.lineTo(W, 0); ctx.quadraticCurveTo(cx, cyTop, 0, 0);
+            ctx.closePath();
+            ctx.clip(); 
+            drawSpaceLayer(W, H, topGrad, true, cyTop);
+            ctx.restore();
+
+            // Draw Bottom
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(0, H); ctx.lineTo(W, H); ctx.quadraticCurveTo(cx, cyBot, 0, H);
+            ctx.closePath();
+            ctx.clip(); 
+            drawSpaceLayer(W, H, botGrad, false, cyBot);
+            ctx.restore();
+        }
+
+        window.resetSlider = function(id) {
+            document.getElementById(id).value = 0;
+            updateGraphic();
+        };
+
+        // UI Interactions
+        let isDragging = false, startX, startY, initialPanX, initialPanY;
+        
+        mousePanTog.addEventListener('change', () => {
+            touchpoint.style.cursor = mousePanTog.checked ? 'crosshair' : 'grab';
+        });
+
+        previewArea.addEventListener('mousemove', (e) => {
+            if (mousePanTog.checked) {
+                const rect = previewArea.getBoundingClientRect();
+                const panX = ((e.clientX - rect.left) / rect.width * 100) - 50;
+                const panY = ((e.clientY - rect.top) / rect.height * 100) - 50;
+                
+                panXRange.value = Math.max(-50, Math.min(50, panX));
+                panYRange.value = Math.max(-50, Math.min(50, panY));
+                updateGraphic();
+            }
+        });
+
+        touchpoint.addEventListener('mousedown', (e) => {
+            if (mousePanTog.checked) return;
+            isDragging = true; startX = e.clientX; startY = e.clientY;
+            initialPanX = parseFloat(panXRange.value); initialPanY = parseFloat(panYRange.value);
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging || mousePanTog.checked) return;
+            const sensitivity = 0.15;
+            panXRange.value = Math.max(-50, Math.min(50, initialPanX - ((e.clientX - startX) * sensitivity)));
+            panYRange.value = Math.max(-50, Math.min(50, initialPanY - ((e.clientY - startY) * sensitivity)));
+            updateGraphic();
+        });
+        window.addEventListener('mouseup', () => isDragging = false);
+        window.addEventListener('mouseleave', () => isDragging = false);
+
+        document.querySelectorAll('.ui-input').forEach(input => input.addEventListener('input', updateGraphic));
+        document.querySelectorAll('.gen-input').forEach(input => {
+            input.addEventListener('input', () => { initSpaceObjects(); updateGraphic(); });
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = `landscape-${formatSel.value.replace(':', 'x')}.png`;
+            link.href = canvas.toDataURL('image/png');
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        });
+
+        // Keep canvas responsive on window resize
+        window.addEventListener('resize', updateGraphic);
+
+        // Init cursor state
+        touchpoint.style.cursor = mousePanTog.checked ? 'crosshair' : 'grab';
+
+        initSpaceObjects();
+        updateGraphic();
+    </script>
+</body>
+</html>
