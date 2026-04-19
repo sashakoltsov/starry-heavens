@@ -669,6 +669,10 @@
 
             <div style="flex-grow: 1;"></div>
             
+            <button class="tab-btn icon-btn" id="playPauseBtn" title="Pause Animation">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+            </button>
+
             <!-- FPS Monitor Widget -->
             <div class="top-widget">
                 <div id="fps-circle" class="fps-circle" style="background:#00C851;"></div>
@@ -1667,6 +1671,7 @@
             let lastFpsTime = performance.now();
             let currentFps = 60;
 
+            window.isPaused = false;
             window.isExportingWebm = false;
             window.isExportingSvgDither = false;
             window.svgDotsList = null;
@@ -2230,8 +2235,16 @@
             };
 
             function updateFpsUI(fps) {
-                document.getElementById('fps-text').innerText = `${fps} FPS`;
+                const textEl = document.getElementById('fps-text');
                 const circle = document.getElementById('fps-circle');
+                
+                if (window.isPaused) {
+                    circle.style.backgroundColor = '#888888';
+                    textEl.innerText = 'PAUSED';
+                    return;
+                }
+
+                textEl.innerText = `${fps} FPS`;
                 if (fps >= 40) {
                     circle.style.backgroundColor = '#00C851';
                 } else if (fps >= 20) {
@@ -2244,12 +2257,19 @@
             function animLoop(time) {
                 if (window.isExportingWebm) return;
 
-                frameSeed++;
-                frameCount++;
-
                 if (!lastTime) lastTime = time;
                 let dt = (time - lastTime) / 1000;
                 lastTime = time;
+
+                if (window.isPaused) {
+                    lastFpsTime = time;
+                    frameCount = 0;
+                    animFrameReq = requestAnimationFrame(animLoop);
+                    return;
+                }
+
+                frameSeed++;
+                frameCount++;
 
                 if (time - lastFpsTime >= 500) {
                     currentFps = Math.round((frameCount * 1000) / (time - lastFpsTime));
@@ -2297,6 +2317,22 @@
                 toggleAnimOpts('rotate', e.target.checked);
                 if(!anyAnimating()) window.triggerGraphicUpdate();
             });
+            
+            document.getElementById('playPauseBtn').addEventListener('click', (e) => {
+                window.isPaused = !window.isPaused;
+                const btn = e.currentTarget;
+                if (window.isPaused) {
+                    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+                    btn.title = "Play Animation";
+                    updateFpsUI(currentFps); 
+                } else {
+                    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+                    btn.title = "Pause Animation";
+                    lastTime = performance.now();
+                    lastFpsTime = performance.now();
+                }
+            });
+
             document.getElementById('slideXDir').addEventListener('change', (e) => {
                 slideXDir = e.target.value === 'left' ? -1 : 1;
             });
