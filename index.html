@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Landscape Graphic Generator</title>
-    <!-- WebM Muxer library for deterministic offline video rendering -->
     <script src="https://unpkg.com/webm-muxer/build/webm-muxer.js"></script>
     <style>
         :root {
@@ -69,8 +68,13 @@
             align-items: center;
         }
 
-        .tab-btn:hover {
+        .tab-btn:hover:not(:disabled) {
             background: rgba(40, 40, 40, 0.95);
+        }
+
+        .tab-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .tab-btn.active {
@@ -87,6 +91,12 @@
             align-items: center;
             justify-content: center;
             border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .icon-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .top-widget {
@@ -247,23 +257,6 @@
             accent-color: var(--accent);
         }
 
-        button.reset-btn {
-            background: none;
-            border: 1px solid #555;
-            color: var(--text-muted);
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 10px;
-            padding: 4px 8px;
-            transition: 0.2s;
-            text-transform: uppercase;
-        }
-
-        button.reset-btn:hover {
-            background: #555;
-            color: #fff;
-        }
-
         .color-row {
             display: flex;
             align-items: center;
@@ -398,16 +391,14 @@
             font-size: 9px;
         }
 
-        .anim-toggles {
-            display: flex;
-            align-items: center;
-            background: #111;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #333;
-            padding: 10px 16px;
-            gap: 20px;
-            justify-content: space-between;
+        .anim-opts {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            padding-left: 16px;
+            margin-top: -4px;
+            margin-bottom: 4px;
+            border-left: 2px solid #333;
         }
 
         .anim-label {
@@ -427,7 +418,7 @@
             justify-content: center;
             padding: 0;
             box-sizing: border-box;
-            background-color: #1D1D1D;
+            background-color: #14151D;
             overflow: hidden;
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -441,40 +432,53 @@
             justify-content: center;
             background-color: transparent;
             cursor: grab;
+            position: relative;
         }
         #touchpoint:active { cursor: grabbing; }
         canvas {
             display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none;
+            border-radius: 10px;
         }
 
         /* --- Bottom-Right Pan Widget --- */
-        #pan-widget {
+        #pan-widget-container {
             position: absolute;
             bottom: 30px;
             right: 30px;
             width: 80px;
             height: 80px;
             z-index: 150;
+            pointer-events: auto;
+        }
+
+        #pan-widget-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
             background: rgba(0, 0, 0, 0.4);
             border: 1px solid #333;
             border-radius: 50%;
             backdrop-filter: blur(4px);
-            pointer-events: auto;
+            z-index: 1;
         }
 
-        #pan-widget::before, #pan-widget::after {
-            content: '';
+        .pan-line-h {
             position: absolute;
-            background: #888;
-            border-radius: 2px;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%; width: 70px; height: 4px;
+            background: #888; border-radius: 2px;
             transform: translate(-50%, -50%);
             pointer-events: none;
-            z-index: 1; /* Under the sliders */
+            z-index: 2;
         }
-        #pan-widget::before { width: 70px; height: 4px; }
-        #pan-widget::after { width: 4px; height: 70px; }
+
+        .pan-line-v {
+            position: absolute;
+            top: 50%; left: 50%; width: 4px; height: 70px;
+            background: #888; border-radius: 2px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 2;
+        }
 
         .cross-slider {
             position: absolute;
@@ -486,7 +490,7 @@
             left: 0;
             margin: 0;
             outline: none;
-            z-index: 2; /* Above the cross lines */
+            z-index: 10;
         }
 
         .cross-slider::-webkit-slider-runnable-track { width: 100%; height: 4px; background: transparent; }
@@ -520,6 +524,26 @@
         #panY::-webkit-slider-thumb { background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ctext x='10' y='14.5' font-family='sans-serif' font-size='12' font-weight='bold' fill='%23333' text-anchor='middle' transform='rotate(90 10 10)'%3EV%3C/text%3E%3C/svg%3E") center center no-repeat; }
         #panY::-moz-range-thumb { background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ctext x='10' y='14.5' font-family='sans-serif' font-size='12' font-weight='bold' fill='%23333' text-anchor='middle' transform='rotate(90 10 10)'%3EV%3C/text%3E%3C/svg%3E") center center no-repeat; }
 
+        #resetPanBtn {
+            position: absolute;
+            bottom: -8px;
+            right: -8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #444;
+            color: #fff;
+            border: 1px solid #666;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            z-index: 20;
+            transition: 0.2s;
+        }
+        #resetPanBtn:hover { background: #666; }
+
     </style>
 </head>
 <body>
@@ -527,13 +551,22 @@
     <div id="preview-area">
         <div id="touchpoint">
             <canvas id="canvas"></canvas>
+            <svg style="position: absolute; bottom: 24px; left: 24px; pointer-events: none; z-index: 10;" width="120" height="35.2" viewBox="0 0 150 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18.2875 37.1109H24.7765V0H15.3379C5.84555 0 0.858062 4.85912 0.858062 12.0143C0.858062 17.7278 3.59314 21.0918 8.47336 24.5626L0 37.1109H7.02539L16.4641 23.0675L13.1927 20.8782C9.22417 18.2084 7.29353 16.1259 7.29353 11.6405C7.29353 7.68916 10.0822 5.01932 15.3915 5.01932H18.2875V37.1109ZM103.504 35.2954V30.1159C101.519 31.4508 98.1945 32.6255 95.084 32.6255C90.4183 32.6255 88.6485 30.4363 88.3804 25.9509H103.772V22.5869C103.772 13.2424 99.6425 9.71825 93.2606 9.71825C85.4844 9.71825 81.7841 15.6453 81.7841 23.7616C81.7841 33.1061 86.3961 37.6449 94.5477 37.6449C98.6235 37.6449 101.627 36.5769 103.504 35.2954ZM143.404 37.6449C146.353 37.6449 148.445 37.1109 150 35.9895V30.81C148.391 31.9314 146.461 32.6255 143.779 32.6255C139.221 32.6255 137.344 29.1013 137.344 23.5481C137.344 17.7278 139.65 14.7376 143.833 14.7376C146.3 14.7376 148.713 15.5919 150 16.3929V10.9998C148.659 10.2522 146.3 9.71825 143.136 9.71825C134.984 9.71825 130.747 15.5385 130.747 23.7082C130.747 32.6789 134.877 37.6449 143.404 37.6449ZM45.0483 10.2522V20.8782H36.5213V10.2522H30.1394V37.1109H36.5213V25.8975H45.0483V37.1109H51.4301V10.2522H45.0483ZM80.2288 32.0916H77.3865V10.2522H58.7773V12.5483C58.7773 19.1161 58.3482 27.6062 56.0958 32.0916H54.1116V43.2515H60.0107V37.1109H74.3296V43.2515H80.2288V32.0916ZM123.883 37.1109H131.123L120.88 22.6403L129.889 10.2522H123.454L114.444 22.6403V10.2522H108.062V37.1109H114.444V23.9218L123.883 37.1109ZM93.1534 14.7376C96.3175 14.7376 97.2828 17.354 97.2828 20.718V21.252H88.3804C88.5413 16.9802 90.0965 14.7376 93.1534 14.7376ZM71.0046 32.0916H61.995C63.7647 28.0334 64.2474 20.718 64.2474 16.0725V15.2715H71.0046V32.0916Z" fill="#4000CE"/>
+            </svg>
         </div>
     </div>
 
     <!-- Bottom-Right Pan Control Widget -->
-    <div id="pan-widget" title="Pan X/Y">
+    <div id="pan-widget-container">
+        <div id="pan-widget-bg"></div>
+        <div class="pan-line-h"></div>
+        <div class="pan-line-v"></div>
         <input type="range" class="cross-slider ui-input" id="panX" min="-50" max="50" value="0">
         <input type="range" class="cross-slider ui-input" id="panY" min="-50" max="50" value="0">
+        <button id="resetPanBtn" title="Reset Pan">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+        </button>
     </div>
 
     <div id="ui-container">
@@ -569,7 +602,7 @@
 
         <!-- CREATE PANEL -->
         <div id="panel-create" class="tab-panel">
-            <details open>
+            <details>
                 <summary>Camera & Layout</summary>
                 <div class="details-content">
                     <div class="control-group">
@@ -580,34 +613,43 @@
                             <option value="3:4">3:4</option>
                             <option value="2:3">2:3</option>
                             <option value="9:16">9:16 (Story)</option>
-                            <option value="1:2" selected>1:2</option>
-                            <option value="16:9">16:9 (Landscape)</option>
+                            <option value="1:2">1:2</option>
+                            <option value="16:9" selected>16:9 (Landscape)</option>
                         </select>
                     </div>
                     <div class="control-group">
                         <label>Orientation</label>
                         <select id="orientation" class="ui-input">
-                            <option value="horizontal">Horizontal</option>
-                            <option value="vertical" selected>Vertical</option>
+                            <option value="horizontal" selected>Horizontal</option>
+                            <option value="vertical">Vertical</option>
                         </select>
                     </div>
                     <div class="control-group">
                         <div class="label-row">
-                            <label>Horizon Curve <span class="val-badge" id="val-hCurve">36</span></label>
+                            <label>Horizon Curve <span class="val-badge" id="val-hCurve">55</span></label>
                         </div>
-                        <input type="range" class="slider ui-input" id="hCurve" min="0" max="100" value="36">
+                        <input type="range" class="slider ui-input" id="hCurve" min="0" max="100" value="55">
                     </div>
                     <div class="control-group">
                         <div class="label-row">
-                            <label>Edge Pinch (Band Width) <span class="val-badge" id="val-edgePinch">14</span></label>
+                            <label>Edge Pinch (Band Width) <span class="val-badge" id="val-edgePinch">55</span></label>
                         </div>
-                        <input type="range" class="slider ui-input" id="edgePinch" min="0" max="100" value="14">
+                        <input type="range" class="slider ui-input" id="edgePinch" min="0" max="100" value="55">
                     </div>
                     <div class="control-group">
                         <div class="label-row">
                             <label>Dive In/Out <span class="val-badge" id="val-dive">100</span></label>
                         </div>
                         <input type="range" class="slider ui-input" id="dive" min="0" max="100" value="100">
+                    </div>
+                    <div class="control-group" style="padding-top: 12px; margin-top: 4px; border-top: 1px solid #333;">
+                        <div class="label-row">
+                            <label>Reflect Bottom Half</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="reflectTog" class="ui-input" checked>
+                                <span class="slider-tog"></span>
+                            </label>
+                        </div>
                     </div>
                     <div class="control-group" style="padding-top: 12px; margin-top: 4px; border-top: 1px solid #333;">
                         <div class="label-row">
@@ -646,78 +688,52 @@
 
             <details>
                 <summary>Shapes Mix</summary>
-                <div class="details-content">
+                <div class="details-content" id="shapes-mix-content">
                     <div class="control-group">
                         <label>Total Density</label>
-                        <input type="range" class="slider gen-input" id="totalCount" min="0" max="500" value="426">
+                        <input type="range" class="slider gen-input" id="totalCount" min="0" max="500" value="203">
                     </div>
                     <div class="control-group">
                         <label>Distribution Noise</label>
-                        <input type="range" class="slider gen-input" id="noise" min="0" max="100" value="55">
+                        <input type="range" class="slider gen-input" id="noise" min="0" max="100" value="24">
                     </div>
-                    <div class="control-group">
-                        <div class="label-row">
-                            <label>Inner Shadow (3D)</label>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="pseudo3D" class="ui-input">
-                                <span class="slider-tog"></span>
-                            </label>
+
+                    <div class="layer-box" style="margin-top: 10px; background: #1a1a1a;">
+                        <h4 style="margin-bottom:12px;">Global Overrides</h4>
+                        <div class="control-group">
+                            <div class="label-row">
+                                <label>Override Fill</label>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <label class="toggle-switch" style="transform: scale(0.8);">
+                                        <input type="checkbox" id="globalFillTog" class="ui-input">
+                                        <span class="slider-tog"></span>
+                                    </label>
+                                    <input type="color" id="globalFillColor" class="circle-picker small-picker ui-input" value="#0000ff">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <div class="label-row">
+                                <label>Override Stroke</label>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <label class="toggle-switch" style="transform: scale(0.8);">
+                                        <input type="checkbox" id="globalStrokeTog" class="ui-input">
+                                        <span class="slider-tog"></span>
+                                    </label>
+                                    <input type="color" id="globalStrokeColor" class="circle-picker small-picker ui-input" value="#ffffff">
+                                    <input type="range" id="globalStrokeWeight" class="slider ui-input" style="width:40px;" min="1" max="20" value="2">
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="control-group">
-                        <div class="label-row">
-                            <label><input type="color" id="overrideColor" class="circle-picker small-picker ui-input" value="#0000ff"> Override Colors</label>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="overrideTog" class="ui-input">
-                                <span class="slider-tog"></span>
-                            </label>
-                        </div>
+
+                    <label style="margin-top: 10px;">Shape Library</label>
+                    <div id="shapes-list" style="display:flex; flex-direction:column; gap:10px;">
+                        <!-- Dynamic Shape Elements Go Here -->
                     </div>
-                    <div class="control-group" style="padding-top: 12px; margin-top: 4px; border-top: 1px solid #333;">
-                        <div class="label-row">
-                            <label>Reflect Bottom Half</label>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="reflectTog" class="ui-input">
-                                <span class="slider-tog"></span>
-                            </label>
-                        </div>
-                    </div>
-                    <label style="margin-top: 10px;">Shape Weights & Colors</label>
-                    <div class="control-group">
-                        <div class="label-row">
-                            <label><input type="color" id="sc0" class="circle-picker small-picker ui-input" value="#0000ff"> Circle</label>
-                            <span class="val-badge" id="v-s0">20</span>
-                        </div>
-                        <input type="range" class="slider gen-input shape-val" data-target="v-s0" id="shape0" min="0" max="100" value="20">
-                    </div>
-                    <div class="control-group">
-                        <div class="label-row">
-                            <label><input type="color" id="sc1" class="circle-picker small-picker ui-input" value="#6600ff"> Diamond</label>
-                            <span class="val-badge" id="v-s1">20</span>
-                        </div>
-                        <input type="range" class="slider gen-input shape-val" data-target="v-s1" id="shape1" min="0" max="100" value="20">
-                    </div>
-                    <div class="control-group">
-                        <div class="label-row">
-                            <label><input type="color" id="sc2" class="circle-picker small-picker ui-input" value="#59140d"> Ellipse</label>
-                            <span class="val-badge" id="v-s2">20</span>
-                        </div>
-                        <input type="range" class="slider gen-input shape-val" data-target="v-s2" id="shape2" min="0" max="100" value="20">
-                    </div>
-                    <div class="control-group">
-                        <div class="label-row">
-                            <label><input type="color" id="sc3" class="circle-picker small-picker ui-input" value="#080075"> Star</label>
-                            <span class="val-badge" id="v-s3">51</span>
-                        </div>
-                        <input type="range" class="slider gen-input shape-val" data-target="v-s3" id="shape3" min="0" max="100" value="51">
-                    </div>
-                    <div class="control-group">
-                        <div class="label-row">
-                            <label><input type="color" id="sc4" class="circle-picker small-picker ui-input" value="#0000ff"> Stacks</label>
-                            <span class="val-badge" id="v-s4">28</span>
-                        </div>
-                        <input type="range" class="slider gen-input shape-val" data-target="v-s4" id="shape4" min="0" max="100" value="28">
-                    </div>
+                    
+                    <button class="tab-btn" id="addShapeBtn" style="justify-content: center; border-style: dashed;">+ Add Custom Shape (SVG)</button>
+                    <input type="file" id="addShapeFile" accept=".svg" style="display:none;">
                 </div>
             </details>
 
@@ -729,11 +745,11 @@
                         <div class="grid-2x2">
                             <div class="control-group">
                                 <label>Weight</label>
-                                <input type="range" class="slider gen-input" id="wFar" min="0" max="100" value="100">
+                                <input type="range" class="slider gen-input" id="wFar" min="0" max="100" value="73">
                             </div>
                             <div class="control-group">
                                 <label>Size</label>
-                                <input type="range" class="slider gen-input" id="sFar" min="1" max="50" value="12">
+                                <input type="range" class="slider gen-input" id="sFar" min="1" max="50" value="18">
                             </div>
                             <div class="control-group">
                                 <label>Size Noise</label>
@@ -751,15 +767,15 @@
                         <div class="grid-2x2">
                             <div class="control-group">
                                 <label>Weight</label>
-                                <input type="range" class="slider gen-input" id="wMid" min="0" max="100" value="18">
+                                <input type="range" class="slider gen-input" id="wMid" min="0" max="100" value="36">
                             </div>
                             <div class="control-group">
                                 <label>Size</label>
-                                <input type="range" class="slider gen-input" id="sMid" min="5" max="100" value="37">
+                                <input type="range" class="slider gen-input" id="sMid" min="5" max="100" value="71">
                             </div>
                             <div class="control-group">
                                 <label>Size Noise</label>
-                                <input type="range" class="slider gen-input" id="snMid" min="0" max="100" value="26">
+                                <input type="range" class="slider gen-input" id="snMid" min="0" max="100" value="44">
                             </div>
                             <div class="control-group">
                                 <label>Opacity</label>
@@ -773,11 +789,11 @@
                         <div class="grid-2x2">
                             <div class="control-group">
                                 <label>Weight</label>
-                                <input type="range" class="slider gen-input" id="wClose" min="0" max="100" value="27">
+                                <input type="range" class="slider gen-input" id="wClose" min="0" max="100" value="28">
                             </div>
                             <div class="control-group">
                                 <label>Size</label>
-                                <input type="range" class="slider gen-input" id="sClose" min="10" max="200" value="127">
+                                <input type="range" class="slider gen-input" id="sClose" min="10" max="200" value="147">
                             </div>
                             <div class="control-group">
                                 <label>Size Noise</label>
@@ -797,15 +813,15 @@
                 <div class="details-content">
                     <div class="control-group">
                         <div class="label-row">
-                            <label>Horizon Warp Pull <span class="val-badge" id="val-warpPull">43</span></label>
+                            <label>Horizon Warp Pull <span class="val-badge" id="val-warpPull">0</span></label>
                         </div>
-                        <input type="range" class="slider ui-input" id="warpPull" min="0" max="100" value="43">
+                        <input type="range" class="slider ui-input" id="warpPull" min="0" max="100" value="0">
                     </div>
                     <div class="control-group">
                         <div class="label-row">
-                            <label>Corner Warp Pull <span class="val-badge" id="val-cornerPull">59</span></label>
+                            <label>Corner Warp Pull <span class="val-badge" id="val-cornerPull">52</span></label>
                         </div>
-                        <input type="range" class="slider ui-input" id="cornerPull" min="0" max="100" value="59">
+                        <input type="range" class="slider ui-input" id="cornerPull" min="0" max="100" value="52">
                     </div>
                 </div>
             </details>
@@ -813,41 +829,56 @@
 
         <!-- ANIMATE PANEL -->
         <div id="panel-animate" class="tab-panel">
-            <div class="anim-toggles">
-                <label class="anim-label"><input type="checkbox" id="animSlideXTog" class="ui-input" checked> X Slide</label>
-                <label class="anim-label"><input type="checkbox" id="animSlideYTog" class="ui-input"> Y Slide</label>
-                <label class="anim-label"><input type="checkbox" id="animDiveTog" class="ui-input" checked> Dive</label>
-                <label class="anim-label"><input type="checkbox" id="animRotateTog" class="ui-input" checked> Rotate</label>
-            </div>
-            <div class="control-group" style="margin-top: 10px;">
-                <div class="label-row">
-                    <label>X Slide Direction</label>
-                    <select id="slideXDir" class="ui-input" style="width: auto; padding: 6px 10px; font-size: 11px;">
-                        <option value="right" selected>→ Right</option>
-                        <option value="left">← Left</option>
-                    </select>
-                </div>
-            </div>
             <div class="control-group">
                 <div class="label-row">
-                    <label>Y Slide Direction</label>
-                    <select id="slideYDir" class="ui-input" style="width: auto; padding: 6px 10px; font-size: 11px;">
-                        <option value="down" selected>↓ Down</option>
-                        <option value="up">↑ Up</option>
-                    </select>
+                    <label class="anim-label"><input type="checkbox" id="animSlideXTog" class="ui-input"> X Slide</label>
+                </div>
+                <div id="opts-slideX" class="anim-opts" style="display:none;">
+                    <div class="label-row"><label>Speed <span class="val-badge" id="val-animSpeedSlideX">13</span></label></div>
+                    <input type="range" id="animSpeedSlideX" class="slider ui-input" min="1" max="100" value="13">
+                    <div class="label-row" style="margin-top:4px;"><label>Direction</label>
+                        <select id="slideXDir" class="ui-input" style="width: auto; padding: 4px 8px;">
+                            <option value="right" selected>→ Right</option>
+                            <option value="left">← Left</option>
+                        </select>
+                    </div>
                 </div>
             </div>
-            <div class="control-group" style="margin-top: 10px;">
+            <div class="control-group" style="padding-top: 10px; border-top: 1px solid #333;">
                 <div class="label-row">
-                    <label>Motion Speed <span class="val-badge" id="val-animSpeed">6</span></label>
+                    <label class="anim-label"><input type="checkbox" id="animDiveTog" class="ui-input" checked> Dive</label>
                 </div>
-                <input type="range" id="animSpeed" class="slider" min="1" max="100" value="6">
+                <div id="opts-dive" class="anim-opts" style="display:flex;">
+                    <div class="label-row"><label>Speed <span class="val-badge" id="val-animSpeedDive">13</span></label></div>
+                    <input type="range" id="animSpeedDive" class="slider ui-input" min="1" max="100" value="13">
+                    
+                    <div class="label-row" style="margin-top:4px;"><label>Scaling Target <span class="val-badge" id="val-animScale">1.2</span></label></div>
+                    <input type="range" id="animScale" class="slider" min="10" max="100" value="12">
+                    
+                    <div class="label-row" style="margin-top:4px;"><label>Fade Duration <span class="val-badge" id="val-fadeDuration">20</span></label></div>
+                    <input type="range" id="fadeDuration" class="slider ui-input" min="1" max="100" value="20">
+
+                    <div class="label-row" style="margin-top:4px;">
+                        <label>Blur Out Transition</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="diveBlurTog" class="ui-input">
+                            <span class="slider-tog"></span>
+                        </label>
+                    </div>
+                    <div id="opts-blur" style="display:none; flex-direction:column; gap:10px;">
+                        <div class="label-row"><label>Max Blur px <span class="val-badge" id="val-diveBlurMax">10</span></label></div>
+                        <input type="range" id="diveBlurMax" class="slider ui-input" min="1" max="50" value="10">
+                    </div>
+                </div>
             </div>
-            <div class="control-group">
+            <div class="control-group" style="padding-top: 10px; border-top: 1px solid #333;">
                 <div class="label-row">
-                    <label>Dive Scaling Target <span class="val-badge" id="val-animScale">1.2</span></label>
+                    <label class="anim-label"><input type="checkbox" id="animRotateTog" class="ui-input" checked> Rotate</label>
                 </div>
-                <input type="range" id="animScale" class="slider" min="10" max="100" value="12">
+                <div id="opts-rotate" class="anim-opts" style="display:flex;">
+                    <div class="label-row"><label>Speed <span class="val-badge" id="val-animSpeedRotate">13</span></label></div>
+                    <input type="range" id="animSpeedRotate" class="slider ui-input" min="1" max="100" value="13">
+                </div>
             </div>
         </div>
 
@@ -883,89 +914,23 @@
 
             <div class="control-group">
                 <div class="label-row">
-                    <label>Dot Scale (%) <span class="val-badge" id="val-dotScale">202</span></label>
+                    <label>Dot Scale (%) <span class="val-badge" id="val-dotScale">217</span></label>
                 </div>
-                <input type="range" class="slider ui-input" id="dotScale" min="10" max="300" value="202">
+                <input type="range" class="slider ui-input" id="dotScale" min="10" max="300" value="217">
             </div>
 
             <div class="control-group">
                 <div class="label-row">
-                    <label>Dot Scatter (Jitter) <span class="val-badge" id="val-dotJitter">57</span></label>
+                    <label>Dot Scatter (Jitter) <span class="val-badge" id="val-dotJitter">36</span></label>
                 </div>
-                <input type="range" class="slider ui-input" id="dotJitter" min="0" max="100" value="57">
+                <input type="range" class="slider ui-input" id="dotJitter" min="0" max="100" value="36">
             </div>
 
             <div class="control-group">
                 <div class="label-row">
-                    <label>Edge Curl (Flow Strength) <span class="val-badge" id="val-dotWarp">18</span></label>
+                    <label>Edge Curl (Flow Strength) <span class="val-badge" id="val-dotWarp">7</span></label>
                 </div>
-                <input type="range" class="slider ui-input" id="dotWarp" min="0" max="100" value="18">
-            </div>
-
-            <div class="control-group" style="padding-top: 12px; margin-top: 4px; border-top: 1px solid #333;">
-                <div class="label-row">
-                    <label>Atmospheric Dust (Overlay)</label>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="dustLifecycleTog" class="ui-input">
-                        <span class="slider-tog"></span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <div class="label-row">
-                    <label>Dust Lifespan <span class="val-badge" id="val-dustLife">60</span></label>
-                </div>
-                <input type="range" class="slider ui-input" id="dustLife" min="10" max="200" value="60">
-            </div>
-
-            <div class="control-group">
-                <div class="label-row">
-                    <label>Dust Drift Speed <span class="val-badge" id="val-dustDrift">50</span></label>
-                </div>
-                <input type="range" class="slider ui-input" id="dustDrift" min="0" max="100" value="50">
-            </div>
-
-            <div class="control-group">
-                <div class="label-row">
-                    <label>Dust Replication <span class="val-badge" id="val-dustReplicate">0</span></label>
-                </div>
-                <input type="range" class="slider ui-input" id="dustReplicate" min="-100" max="150" value="0">
-            </div>
-
-            <div class="control-group">
-                <div class="label-row">
-                    <label>Dust Swirl Strength <span class="val-badge" id="val-dustSwirl">30</span></label>
-                </div>
-                <input type="range" class="slider ui-input" id="dustSwirl" min="0" max="100" value="30">
-            </div>
-
-            <div class="control-group">
-                <div class="label-row">
-                    <label>Source Pull (Attraction) <span class="val-badge" id="val-dustPull">40</span></label>
-                </div>
-                <input type="range" class="slider ui-input" id="dustPull" min="0" max="100" value="40">
-            </div>
-
-            <div class="control-group">
-                <div class="label-row">
-                    <label>Motion Inheritance <span class="val-badge" id="val-dustInherit">50</span></label>
-                </div>
-                <input type="range" class="slider ui-input" id="dustInherit" min="0" max="100" value="50">
-            </div>
-
-            <div class="control-group">
-                <div class="label-row">
-                    <label>Dust Size (%) <span class="val-badge" id="val-dustSize">100</span></label>
-                </div>
-                <input type="range" class="slider ui-input" id="dustSize" min="20" max="400" value="100">
-            </div>
-
-            <div class="control-group">
-                <div class="label-row">
-                    <label>Dust Brightness (%) <span class="val-badge" id="val-dustBrightness">180</span></label>
-                </div>
-                <input type="range" class="slider ui-input" id="dustBrightness" min="50" max="400" value="180">
+                <input type="range" class="slider ui-input" id="dotWarp" min="0" max="100" value="7">
             </div>
 
             <div class="control-group" style="padding-top: 12px; margin-top: 4px; border-top: 1px solid #333;">
@@ -980,9 +945,9 @@
 
             <div class="control-group">
                 <div class="label-row">
-                    <label>Trail Length (Fade) <span class="val-badge" id="val-trailLength">70</span></label>
+                    <label>Trail Length (Fade) <span class="val-badge" id="val-trailLength">83</span></label>
                 </div>
-                <input type="range" class="slider ui-input" id="trailLength" min="0" max="100" value="70">
+                <input type="range" class="slider ui-input" id="trailLength" min="0" max="100" value="83">
             </div>
         </div>
 
@@ -1006,7 +971,7 @@
                     <input type="range" id="exportPngSize" class="slider" min="500" max="8000" step="100" value="2400">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
                         <span style="font-size: 10px; color: var(--text-muted);">Scales the current render density to this final pixel size.</span>
-                        <span style="font-size: 11px; font-weight: 700; color: var(--accent);" id="res-exportPng">2400 × 4800 px</span>
+                        <span style="font-size: 11px; font-weight: 700; color: var(--accent);" id="res-exportPng">2400 × 4266 px</span>
                     </div>
                 </div>
             </div>
@@ -1027,12 +992,12 @@
             <div id="opts-webm" class="export-opts" style="display:none;">
                 <div class="control-group">
                     <div class="label-row">
-                        <label>Output Size (Shorter Side px) <span class="val-badge" id="val-exportWebmSize">1080</span></label>
+                        <label>Output Size (Shorter Side px) <span class="val-badge" id="val-exportWebmSize">1100</span></label>
                     </div>
-                    <input type="range" id="exportWebmSize" class="slider" min="500" max="4000" step="100" value="1080">
+                    <input type="range" id="exportWebmSize" class="slider" min="500" max="4000" step="100" value="1100">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
                         <span style="font-size: 10px; color: var(--text-muted);">Outputs video using current render density.</span>
-                        <span style="font-size: 11px; font-weight: 700; color: var(--accent);" id="res-exportWebm">1080 × 2160 px</span>
+                        <span style="font-size: 11px; font-weight: 700; color: var(--accent);" id="res-exportWebm">1100 × 1955 px</span>
                     </div>
                 </div>
                 <div class="control-group">
@@ -1065,7 +1030,344 @@
     </div>
 
     <script>
-        // --- Global UI Handlers ---
+        const defaultSettings = {
+          "panX": "0", "panY": "0", "renderDensity": "2400", "format": "16:9",
+          "orientation": "horizontal", "hCurve": "55", "edgePinch": "55", "dive": "100",
+          "mousePanTog": false, "bgColor": "#000000", "c1": "#000000", "m1": "50",
+          "c2": "#1f0c04", "m2": "50", "c3": "#320b2b", "totalCount": "203", "noise": "24",
+          "reflectTog": true, "wFar": "73",
+          "sFar": "18", "snFar": "20", "oFar": "100", "wMid": "36", "sMid": "71",
+          "snMid": "44", "oMid": "100", "wClose": "28", "sClose": "147", "snClose": "48",
+          "oClose": "100", "warpPull": "0", "cornerPull": "52", "animSlideXTog": false,
+          "animDiveTog": true, "animRotateTog": true, "slideXDir": "right",
+          "animSpeedSlideX": "13", "animSpeedDive": "13", "animSpeedRotate": "13",
+          "animScale": "12", "postEffect": "dither_bayer", "effectDensity": "100",
+          "gridSize": "1", "dotScale": "217", "dotJitter": "36", "dotWarp": "7",
+          "trailTog": true, "trailLength": "83", "exportFormatTab": "png",
+          "exportPngSize": "2400", "exportSvgType": "clean", "exportWebmSize": "1100",
+          "exportWebmDuration": "5", "exportWebmFps": "60", "fadeDuration": "20",
+          "diveBlurTog": false, "diveBlurMax": "10",
+          "globalFillTog": false, "globalFillColor": "#0000ff",
+          "globalStrokeTog": false, "globalStrokeColor": "#ffffff", "globalStrokeWeight": "2"
+        };
+
+        const defaultSVGs = [
+            { d: "M263.48 87.05C282.749 87.05 298.37 71.4292 298.37 52.16C298.37 32.8908 282.749 17.27 263.48 17.27C244.211 17.27 228.59 32.8908 228.59 52.16C228.59 71.4292 244.211 87.05 263.48 87.05Z", c: "#0000ff", s: 70, vb: "228.59 17.27 69.78 69.78", w: 20 },
+            { d: "M183.14 42.1366L162.344 21.3406C156.814 15.8107 147.848 15.8107 142.318 21.3406L121.522 42.1366C115.992 47.6664 115.992 56.632 121.522 62.1618L142.318 82.9578C147.848 88.4877 156.814 88.4877 162.344 82.9578L183.14 62.1618C188.669 56.632 188.669 47.6664 183.14 42.1366Z", c: "#6600ff", s: 73, vb: "115.99 15.81 72.68 72.68", w: 20 },
+            { d: "M363.12 104.32C374.458 104.32 383.65 80.9672 383.65 52.16C383.65 23.3528 374.458 0 363.12 0C351.782 0 342.59 23.3528 342.59 52.16C342.59 80.9672 351.782 104.32 363.12 104.32Z", c: "#59140d", s: 104, vb: "342.59 0 41.06 104.32", w: 20 },
+            { d: "M514.92 52.16C514.92 44.58 502.96 38.11 486.08 35.49C483.46 18.6 476.99 6.64999 469.41 6.64999C461.83 6.64999 455.36 18.61 452.74 35.49C435.85 38.11 423.9 44.58 423.9 52.16C423.9 59.74 435.86 66.21 452.74 68.83C455.36 85.72 461.83 97.67 469.41 97.67C476.99 97.67 483.46 85.71 486.08 68.83C502.97 66.21 514.92 59.74 514.92 52.16Z", c: "#080075", s: 91, vb: "423.9 6.65 91.02 91.02", w: 25 },
+            { d: "M69.06 52.95C69.06 49 65.03 45.43 58.55 42.88C65.03 40.33 69.06 36.76 69.06 32.81C69.06 25.06 53.6 18.78 34.53 18.78C15.46 18.78 0 25.05 0 32.8C0 36.75 4.03 40.32 10.51 42.87C4.03 45.42 0 48.99 0 52.94C0 56.89 4.03 60.46 10.51 63.01C4.03 65.56 0 69.13 0 73.08C0 80.83 15.46 87.11 34.53 87.11C53.6 87.11 69.06 80.83 69.06 73.08C69.06 69.13 65.03 65.56 58.55 63.01C65.03 60.46 69.06 56.89 69.06 52.94V52.95Z", c: "#0000ff", s: 69, vb: "0 18.78 69.06 68.33", w: 28 }
+        ];
+
+        let shapes = [];
+        let shapeUpdateTimeout = null;
+
+        function initDefaultShapes() {
+            shapes = [];
+            defaultSVGs.forEach((def, i) => {
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${def.vb}"><path d="${def.d}" fill="${def.c}"/></svg>`;
+                shapes.push({
+                    id: 'def_' + i,
+                    originalSvg: svg,
+                    custom: false,
+                    hasCustomFill: false,
+                    customFill: def.c,
+                    strokeTog: false,
+                    strokeColor: '#ffffff',
+                    strokeWeight: 2,
+                    relativeSize: def.s,
+                    weight: def.w,
+                    ready: false,
+                    viewBox: def.vb
+                });
+            });
+        }
+
+        function parseSvgViewBox(svgString) {
+            const match = svgString.match(/viewBox=["']([^"']+)["']/i);
+            return match ? match[1] : "0 0 100 100";
+        }
+
+        function ensureViewBox(svgString) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(svgString, "image/svg+xml");
+            const svgEl = doc.documentElement;
+            if (!svgEl.hasAttribute('viewBox')) {
+                const w = parseFloat(svgEl.getAttribute('width')) || 100;
+                const h = parseFloat(svgEl.getAttribute('height')) || 100;
+                svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
+            }
+            if (!svgEl.hasAttribute('xmlns')) {
+                svgEl.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            }
+            return new XMLSerializer().serializeToString(svgEl);
+        }
+
+        function getModifiedSVG(shape) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(shape.originalSvg, "image/svg+xml");
+            const svgEl = doc.documentElement;
+            
+            const useGlobalFill = document.getElementById('globalFillTog').checked;
+            const globalFill = document.getElementById('globalFillColor').value;
+            const useGlobalStroke = document.getElementById('globalStrokeTog').checked;
+            const globalStroke = document.getElementById('globalStrokeColor').value;
+            const globalStrokeW = document.getElementById('globalStrokeWeight').value;
+
+            const finalFill = shape.hasCustomFill ? shape.customFill : (useGlobalFill ? globalFill : null);
+            const finalStrokeTog = shape.strokeTog || useGlobalStroke;
+            const finalStroke = shape.strokeTog ? shape.strokeColor : globalStroke;
+            const finalStrokeW = shape.strokeTog ? shape.strokeWeight : globalStrokeW;
+
+            const geomTags = ['path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon'];
+            geomTags.forEach(tag => {
+                const els = svgEl.getElementsByTagName(tag);
+                for(let el of els) {
+                    if (finalFill && el.getAttribute('fill') !== 'none') {
+                        el.setAttribute('fill', finalFill);
+                        el.style.fill = finalFill;
+                    }
+                    if (finalStrokeTog) {
+                        el.setAttribute('stroke', finalStroke);
+                        el.setAttribute('stroke-width', finalStrokeW);
+                        el.style.stroke = finalStroke;
+                        el.style.strokeWidth = finalStrokeW;
+                    } else if (!shape.custom) {
+                        el.removeAttribute('stroke');
+                        el.style.stroke = 'none';
+                    }
+                }
+            });
+            return new XMLSerializer().serializeToString(svgEl);
+        }
+
+        function updateShapeCache(shape, callback) {
+            const svgStr = getModifiedSVG(shape);
+            shape.modifiedSvg = svgStr;
+            const blob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = () => {
+                let maxDim = Math.max(img.width, img.height) || 1;
+                let scale = 512 / maxDim;
+                let w = img.width * scale;
+                let h = img.height * scale;
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 256 - w/2, 256 - h/2, w, h);
+                
+                shape.canvas = canvas;
+                shape.ready = true;
+                
+                const prevImg = document.getElementById('preview-' + shape.id);
+                if (prevImg) prevImg.src = url;
+
+                URL.revokeObjectURL(url);
+                if (callback) callback();
+            };
+            img.src = url;
+        }
+
+        function renderShapeUI() {
+            const container = document.getElementById('shapes-list');
+            container.innerHTML = '';
+            shapes.forEach((shape, i) => {
+                const previewUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(shape.modifiedSvg || shape.originalSvg)));
+                const box = document.createElement('div');
+                box.className = 'layer-box';
+                box.style.borderLeft = '3px solid ' + (shape.hasCustomFill ? shape.customFill : '#555');
+                box.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <img id="preview-${shape.id}" src="${previewUrl}" style="width:28px; height:28px; background:#000; border-radius:4px; object-fit:contain; border:1px solid #444;">
+                            <h4 style="margin:0;">${shape.custom ? 'Custom Shape' : 'Shape ' + (i+1)}</h4>
+                        </div>
+                        <button class="icon-btn del-shape" data-idx="${i}" style="width:24px;height:24px;background:#444;" ${shapes.length <= 1 ? 'disabled' : ''} title="Remove Shape">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                    <div class="control-group">
+                        <div class="label-row">
+                            <label>Fill</label>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <input type="color" class="circle-picker small-picker shape-fill-color" data-idx="${i}" value="${shape.customFill}">
+                                <button class="clear-fill-btn" data-idx="${i}" style="background:#444; border:1px solid #555; color:#fff; border-radius:4px; font-size:9px; padding:2px 6px; cursor:pointer;" title="Revert to original or global override">CLEAR</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="label-row">
+                            <label>Stroke <input type="checkbox" class="shape-stroke-tog ui-input" data-idx="${i}" ${shape.strokeTog?'checked':''}></label>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <input type="color" class="circle-picker small-picker shape-stroke-color" data-idx="${i}" value="${shape.strokeColor}">
+                                <input type="range" class="shape-stroke-weight slider" data-idx="${i}" min="1" max="20" value="${shape.strokeWeight}" style="width:50px;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="label-row"><label>Scale (%) <span class="val-badge" id="val-shape-size-${i}">${shape.relativeSize}</span></label></div>
+                        <input type="range" class="shape-size slider" data-idx="${i}" min="10" max="300" value="${shape.relativeSize}">
+                    </div>
+                    <div class="control-group">
+                        <div class="label-row"><label>Mix Weight <span class="val-badge" id="val-shape-weight-${i}">${shape.weight}</span></label></div>
+                        <input type="range" class="shape-weight slider" data-idx="${i}" min="0" max="100" value="${shape.weight}">
+                    </div>
+                `;
+                container.appendChild(box);
+            });
+            document.getElementById('addShapeBtn').disabled = shapes.length >= 10;
+        }
+
+        document.getElementById('shapes-list').addEventListener('input', (e) => {
+            const idx = e.target.dataset.idx;
+            if (idx == null) return;
+            const shape = shapes[idx];
+            
+            if (e.target.classList.contains('shape-size')) {
+                shape.relativeSize = parseInt(e.target.value);
+                document.getElementById(`val-shape-size-${idx}`).innerText = shape.relativeSize;
+                if(typeof window.triggerGraphicUpdate === 'function') window.triggerGraphicUpdate();
+            } else if (e.target.classList.contains('shape-weight')) {
+                shape.weight = parseInt(e.target.value);
+                document.getElementById(`val-shape-weight-${idx}`).innerText = shape.weight;
+                if(typeof window.initSpaceObjects === 'function') {
+                    window.initSpaceObjects();
+                    if(typeof window.triggerGraphicUpdate === 'function') window.triggerGraphicUpdate();
+                }
+            } else if (e.target.classList.contains('shape-stroke-weight')) {
+                shape.strokeWeight = parseInt(e.target.value);
+                if (shape.strokeTog) {
+                    clearTimeout(shapeUpdateTimeout);
+                    shapeUpdateTimeout = setTimeout(() => updateShapeCache(shape, window.triggerGraphicUpdate), 50);
+                }
+            } else if (e.target.classList.contains('shape-stroke-color') || e.target.classList.contains('shape-fill-color')) {
+                if (e.target.classList.contains('shape-fill-color')) {
+                    shape.customFill = e.target.value;
+                    shape.hasCustomFill = true;
+                    e.target.closest('.layer-box').style.borderLeftColor = shape.customFill;
+                } else {
+                    shape.strokeColor = e.target.value;
+                }
+                clearTimeout(shapeUpdateTimeout);
+                shapeUpdateTimeout = setTimeout(() => updateShapeCache(shape, window.triggerGraphicUpdate), 50);
+            }
+        });
+
+        document.getElementById('shapes-list').addEventListener('change', (e) => {
+            const idx = e.target.dataset.idx;
+            if (idx == null) return;
+            const shape = shapes[idx];
+            
+            if (e.target.classList.contains('shape-stroke-tog')) {
+                shape.strokeTog = e.target.checked;
+                updateShapeCache(shape, window.triggerGraphicUpdate);
+            }
+        });
+
+        document.getElementById('shapes-list').addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            const idx = btn.dataset.idx;
+            if (idx == null) return;
+
+            if (btn.classList.contains('clear-fill-btn')) {
+                shapes[idx].hasCustomFill = false;
+                btn.closest('.layer-box').style.borderLeftColor = '#555';
+                updateShapeCache(shapes[idx], window.triggerGraphicUpdate);
+            } else if (btn.classList.contains('del-shape')) {
+                if (shapes.length > 1) {
+                    shapes.splice(idx, 1);
+                    renderShapeUI();
+                    if(typeof window.initSpaceObjects === 'function') {
+                        window.initSpaceObjects();
+                        window.triggerGraphicUpdate();
+                    }
+                }
+            }
+        });
+
+        function refreshAllShapeCaches() {
+            let loaded = 0;
+            shapes.forEach(s => {
+                updateShapeCache(s, () => {
+                    loaded++;
+                    if (loaded === shapes.length && typeof window.triggerGraphicUpdate === 'function') {
+                        window.triggerGraphicUpdate();
+                    }
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            for (let id in defaultSettings) {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (el.type === 'checkbox') el.checked = defaultSettings[id];
+                    else el.value = defaultSettings[id];
+                }
+            }
+            document.querySelectorAll('.val-badge').forEach(badge => {
+                let targetId = badge.id.replace('val-', '');
+                if (document.getElementById(targetId)) {
+                    if (targetId === 'animScale') badge.innerText = (parseFloat(document.getElementById(targetId).value) / 10).toFixed(1);
+                    else badge.innerText = document.getElementById(targetId).value;
+                }
+            });
+
+            toggleAnimOpts('slideX', document.getElementById('animSlideXTog').checked);
+            toggleAnimOpts('dive', document.getElementById('animDiveTog').checked);
+            toggleAnimOpts('rotate', document.getElementById('animRotateTog').checked);
+            document.getElementById('opts-blur').style.display = document.getElementById('diveBlurTog').checked ? 'flex' : 'none';
+
+            // Global overrides events
+            ['globalFillTog', 'globalFillColor', 'globalStrokeTog', 'globalStrokeColor', 'globalStrokeWeight'].forEach(id => {
+                document.getElementById(id).addEventListener('change', refreshAllShapeCaches);
+                if(id.includes('Color') || id.includes('Weight')) {
+                    document.getElementById(id).addEventListener('input', () => {
+                        clearTimeout(shapeUpdateTimeout);
+                        shapeUpdateTimeout = setTimeout(refreshAllShapeCaches, 50);
+                    });
+                }
+            });
+
+            document.getElementById('addShapeBtn').addEventListener('click', () => document.getElementById('addShapeFile').click());
+            document.getElementById('addShapeFile').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const processedSvg = ensureViewBox(ev.target.result);
+                    const newShape = {
+                        id: 'shape_' + Date.now(),
+                        originalSvg: processedSvg,
+                        custom: true,
+                        hasCustomFill: false,
+                        customFill: '#ffffff',
+                        strokeTog: false,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 2,
+                        relativeSize: 100,
+                        weight: 20,
+                        ready: false,
+                        viewBox: parseSvgViewBox(processedSvg)
+                    };
+                    shapes.push(newShape);
+                    updateShapeCache(newShape, () => {
+                        renderShapeUI();
+                        if (typeof window.initSpaceObjects === 'function') {
+                            window.initSpaceObjects();
+                            window.triggerGraphicUpdate();
+                        }
+                    });
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            });
+        });
+
         const tabs = ['create', 'animate', 'finalise', 'export'];
         function toggleTab(tabId) {
             const btn = document.getElementById(`tab-btn-${tabId}`);
@@ -1086,6 +1388,11 @@
             }
         }
         window.toggleTab = toggleTab;
+
+        function toggleAnimOpts(id, show) {
+            const el = document.getElementById('opts-' + id);
+            if (el) el.style.display = show ? 'flex' : 'none';
+        }
 
         window.resetSlider = function(id) {
             const el = document.getElementById(id);
@@ -1110,20 +1417,14 @@
             }
 
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-            // Off-screen canvas for rendering the dust pass
             const dotCanvas = document.createElement('canvas');
             const dotCtx = dotCanvas.getContext('2d', { willReadFrequently: true });
-
-            // Off-screen accumulation buffer for "Sandy Trails"
             const trailCanvas = document.createElement('canvas');
             const trailCtx = trailCanvas.getContext('2d', { willReadFrequently: true });
 
-            // --- REUSABLE IMAGEDATA BUFFERS (allocated once per resize) ---
-            let srcImageData = null;   // for reading from main canvas
-            let dstImageData = null;   // for writing dust output
-            let dstU32 = null;         // Uint32 view over dstImageData.data
-            let prevSrcData = null;    // previous frame's source pixels (for motion inheritance)
+            let srcImageData = null;
+            let dstImageData = null;
+            let dstU32 = null;
 
             const formatSel = document.getElementById('format');
             const orientationSel = document.getElementById('orientation');
@@ -1148,49 +1449,17 @@
             const dotWarpRange = document.getElementById('dotWarp');
             const trailTog = document.getElementById('trailTog');
             const trailLengthRange = document.getElementById('trailLength');
-            const dustLifecycleTog = document.getElementById('dustLifecycleTog');
-            const dustLifeRange = document.getElementById('dustLife');
-            const dustDriftRange = document.getElementById('dustDrift');
 
-            const pathDefs = [
-                { d: "M263.48 87.05C282.749 87.05 298.37 71.4292 298.37 52.16C298.37 32.8908 282.749 17.27 263.48 17.27C244.211 17.27 228.59 32.8908 228.59 52.16C228.59 71.4292 244.211 87.05 263.48 87.05Z", cx: 263.48, cy: 52.16 },
-                { d: "M183.14 42.1366L162.344 21.3406C156.814 15.8107 147.848 15.8107 142.318 21.3406L121.522 42.1366C115.992 47.6664 115.992 56.632 121.522 62.1618L142.318 82.9578C147.848 88.4877 156.814 88.4877 162.344 82.9578L183.14 62.1618C188.669 56.632 188.669 47.6664 183.14 42.1366Z", cx: 152.33, cy: 52.15 },
-                { d: "M363.12 104.32C374.458 104.32 383.65 80.9672 383.65 52.16C383.65 23.3528 374.458 0 363.12 0C351.782 0 342.59 23.3528 342.59 52.16C342.59 80.9672 351.782 104.32 363.12 104.32Z", cx: 363.12, cy: 52.16 },
-                { d: "M514.92 52.16C514.92 44.58 502.96 38.11 486.08 35.49C483.46 18.6 476.99 6.64999 469.41 6.64999C461.83 6.64999 455.36 18.61 452.74 35.49C435.85 38.11 423.9 44.58 423.9 52.16C423.9 59.74 435.86 66.21 452.74 68.83C455.36 85.72 461.83 97.67 469.41 97.67C476.99 97.67 483.46 85.71 486.08 68.83C502.97 66.21 514.92 59.74 514.92 52.16Z", cx: 469.41, cy: 52.16 },
-                { d: "M69.06 52.95C69.06 49 65.03 45.43 58.55 42.88C65.03 40.33 69.06 36.76 69.06 32.81C69.06 25.06 53.6 18.78 34.53 18.78C15.46 18.78 0 25.05 0 32.8C0 36.75 4.03 40.32 10.51 42.87C4.03 45.42 0 48.99 0 52.94C0 56.89 4.03 60.46 10.51 63.01C4.03 65.56 0 69.13 0 73.08C0 80.83 15.46 87.11 34.53 87.11C53.6 87.11 69.06 80.83 69.06 73.08C69.06 69.13 65.03 65.56 58.55 63.01C65.03 60.46 69.06 56.89 69.06 52.94V52.95Z", cx: 34.53, cy: 52.95 }
-            ];
-            const path2DInstances = pathDefs.map(p => new Path2D(p.d));
-
-            // Render density derived from the top bar Density slider
             function getRenderResolution() {
                 const el = document.getElementById('renderDensity');
                 return el ? parseInt(el.value) : 2400;
             }
-            const DUST_BUDGET = 8000;  
+            
             let spaceObjects = [];
-
-            // --- PARTICLE POOL ---
-            const dust = {
-                x:   new Float32Array(DUST_BUDGET),
-                y:   new Float32Array(DUST_BUDGET),
-                vx:  new Float32Array(DUST_BUDGET),
-                vy:  new Float32Array(DUST_BUDGET),
-                age: new Float32Array(DUST_BUDGET),
-                life:new Float32Array(DUST_BUDGET),
-                col: new Uint32Array(DUST_BUDGET),
-                size:new Float32Array(DUST_BUDGET),
-                alive: new Uint8Array(DUST_BUDGET)
-            };
-            let dustHead = 0;
-
-            // Animation state
-            let animState = { slideX: true, slideY: false, dive: true, rotate: true };
+            let animState = { slideX: false, dive: true, rotate: true };
             let slideXDir = 1;
-            let slideYDir = 1;
-            let animSpeed = 6;
             let phaseDive = 0;
             let phaseSlide = 0;
-            let phaseSlideY = 0;
             let phaseRotate = 0;
             let lastTime = 0;
             let animFrameReq;
@@ -1199,7 +1468,6 @@
             let lastFpsTime = performance.now();
             let currentFps = 60;
 
-            // For external export rendering flag
             window.isExportingWebm = false;
             window.isExportingSvgDither = false;
             window.svgDotsList = null;
@@ -1208,29 +1476,6 @@
                 let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + (seed | 0)) | 0;
                 h = Math.imul(h ^ (h >>> 13), 3266489909);
                 return ((h ^ (h >>> 16)) >>> 0) / 4294967296.0;
-            }
-
-            function curlNoise(x, y, seed) {
-                const s = 0.04; 
-                const fx = x * s;
-                const fy = y * s;
-                const ix = Math.floor(fx);
-                const iy = Math.floor(fy);
-                const tx = fx - ix;
-                const ty = fy - iy;
-                const n00 = fastHash(ix,     iy,     seed);
-                const n10 = fastHash(ix + 1, iy,     seed);
-                const n01 = fastHash(ix,     iy + 1, seed);
-                const n11 = fastHash(ix + 1, iy + 1, seed);
-                const ux = tx * tx * (3 - 2 * tx);
-                const uy = ty * ty * (3 - 2 * ty);
-                const top    = n00 + (n10 - n00) * ux;
-                const bottom = n01 + (n11 - n01) * ux;
-                const left   = n00 + (n01 - n00) * uy;
-                const right  = n10 + (n11 - n10) * uy;
-                const dfdx = right - left;
-                const dfdy = bottom - top;
-                return { dx: dfdy, dy: -dfdx };
             }
 
             function hexToRgb(hex) {
@@ -1267,7 +1512,7 @@
                 return { angle, curveY };
             }
 
-            function initSpaceObjects() {
+            window.initSpaceObjects = function() {
                 const total = parseInt(document.getElementById('totalCount').value) * 5;
                 const noise = parseInt(document.getElementById('noise').value);
                 const wFar = parseInt(document.getElementById('wFar').value);
@@ -1275,14 +1520,7 @@
                 const wClose = parseInt(document.getElementById('wClose').value);
                 const sumLayers = wFar + wMid + wClose || 1;
 
-                const shapeWeights = [
-                    parseInt(document.getElementById('shape0').value),
-                    parseInt(document.getElementById('shape1').value),
-                    parseInt(document.getElementById('shape2').value),
-                    parseInt(document.getElementById('shape3').value),
-                    parseInt(document.getElementById('shape4').value)
-                ];
-                const sumShapes = shapeWeights.reduce((a,b) => a+b, 0) || 1;
+                const sumShapes = shapes.reduce((a,b) => a + b.weight, 0) || 1;
 
                 spaceObjects = [];
 
@@ -1292,49 +1530,49 @@
                     { id: 'close', weight: wClose, baseSizeId: 'sClose', snId: 'snClose', pFactor: 1.3 }
                 ];
 
+                const wrapX = 6.0;
+                const wrapY = 12.0; 
+                const areaFactor = (wrapX * wrapY) / (3.0 * 2.0); 
+
                 layers.forEach(layer => {
-                    const layerCount = Math.floor(total * (layer.weight / sumLayers));
+                    const layerCount = Math.floor(total * (layer.weight / sumLayers) * areaFactor);
+                    if (layerCount <= 0) return;
                     const snVal = parseFloat(document.getElementById(layer.snId).value) / 100;
 
-                    [true, false].forEach(isTop => {
-                        const halfCount = Math.floor(layerCount / 2);
-                        if (halfCount <= 0) return;
+                    const cols = Math.ceil(Math.sqrt(layerCount * (wrapX / wrapY)));
+                    const rows = Math.ceil(layerCount / cols);
 
-                        const cols = Math.ceil(Math.sqrt(halfCount * 3));
-                        const rows = Math.ceil(halfCount / cols);
+                    const gw = wrapX / cols;
+                    const gh = wrapY / rows;
 
-                        const gw = 3.0 / cols;
-                        const gh = 2.0 / rows;
+                    for(let i=0; i<layerCount; i++) {
+                        let r = Math.floor(i / cols);
+                        let c = i % cols;
 
-                        for(let i=0; i<halfCount; i++) {
-                            let r = Math.floor(i / cols);
-                            let c = i % cols;
-
-                            let rndS = Math.random() * sumShapes;
-                            let shapeId = 0, currentWeight = 0;
-                            for(let j=0; j<5; j++) {
-                                currentWeight += shapeWeights[j];
-                                if(rndS < currentWeight) { shapeId = j; break; }
-                            }
-
-                            let jx = (Math.random() - 0.5) * gw * (noise / 100) * 1.8;
-                            let jy = (Math.random() - 0.5) * gh * (noise / 100) * 1.8;
-
-                            let baseX = -1.0 + (c + 0.5) * gw + jx;
-                            let baseY = (isTop ? -1.5 : 0.5) + (r + 0.5) * gh + jy;
-
-                            let baseSize = parseFloat(document.getElementById(layer.baseSizeId).value);
-                            let size = baseSize * (1 + (Math.random() * 2 - 1) * snVal);
-                            size = Math.max(baseSize * 0.1, size);
-                            let rotation = Math.random() * Math.PI * 2;
-
-                            spaceObjects.push({
-                                shapeId, baseX, baseY, pFactor: layer.pFactor,
-                                size, baseSize, isTop, rotation, layerId: layer.id,
-                                z: Math.random()
-                            });
+                        let rndS = Math.random() * sumShapes;
+                        let shapeIdx = 0, currentWeight = 0;
+                        for(let j=0; j<shapes.length; j++) {
+                            currentWeight += shapes[j].weight;
+                            if(rndS < currentWeight) { shapeIdx = j; break; }
                         }
-                    });
+
+                        let jx = (Math.random() - 0.5) * gw * (noise / 100) * 1.8;
+                        let jy = (Math.random() - 0.5) * gh * (noise / 100) * 1.8;
+
+                        let baseX = -(wrapX/2) + (c + 0.5) * gw + jx;
+                        let baseY = -(wrapY/2) + (r + 0.5) * gh + jy;
+
+                        let baseSize = parseFloat(document.getElementById(layer.baseSizeId).value);
+                        let size = baseSize * (1 + (Math.random() * 2 - 1) * snVal);
+                        size = Math.max(baseSize * 0.1, size);
+                        let rotation = Math.random() * Math.PI * 2;
+
+                        spaceObjects.push({
+                            shapeIdx, baseX, baseY, pFactor: layer.pFactor,
+                            size, baseSize, rotation, layerId: layer.id,
+                            z: Math.random()
+                        });
+                    }
                 });
             }
 
@@ -1344,14 +1582,15 @@
 
                 const panX = parseFloat(panXRange.value);
                 const panY = parseFloat(panYRange.value);
-                const diveShift = parseFloat(diveRange.value);
                 const warpPull = parseFloat(document.getElementById('warpPull').value) / 100;
                 const cornerPullVal = parseFloat(document.getElementById('cornerPull').value) / 100;
-                const pseudo3D = document.getElementById('pseudo3D').checked;
-                const overrideTog = document.getElementById('overrideTog').checked;
-                const overrideColor = document.getElementById('overrideColor').value;
                 const reflectTog = document.getElementById('reflectTog').checked;
                 const sFarVal = parseFloat(document.getElementById('sFar').value);
+                const fadeDist = parseFloat(document.getElementById('fadeDuration').value) / 100;
+                const useBlur = document.getElementById('diveBlurTog').checked;
+                const blurMax = parseFloat(document.getElementById('diveBlurMax').value);
+
+                const wrapX = 6.0;
 
                 const opacities = {
                     far: parseFloat(document.getElementById('oFar').value) / 100,
@@ -1359,174 +1598,145 @@
                     close: parseFloat(document.getElementById('oClose').value) / 100
                 };
 
-                const shapeColors = [
-                    document.getElementById('sc0').value,
-                    document.getElementById('sc1').value,
-                    document.getElementById('sc2').value,
-                    document.getElementById('sc3').value,
-                    document.getElementById('sc4').value
-                ];
-
-                const forceReflect = animState.slideY || reflectTog;
-
                 spaceObjects.forEach(obj => {
-                    // Skip native bottom-half objects entirely when rendering a forced reflection
-                    if (forceReflect && !obj.isTop) return;
+                    const shape = shapes[obj.shapeIdx];
+                    if (!shape || !shape.ready) return;
 
                     let pX = panX * obj.pFactor;
                     let pY = panY * obj.pFactor;
-                    let dY = diveShift * obj.pFactor * 0.003;
 
                     let currentBaseX = obj.baseX;
                     if (animState.slideX) {
-                        currentBaseX = obj.baseX + phaseSlide * obj.pFactor * slideXDir;
-                        currentBaseX = ((currentBaseX + 1.0) % 3.0 + 3.0) % 3.0 - 1.0;
+                        currentBaseX += phaseSlide * obj.pFactor * slideXDir;
+                        currentBaseX = ((currentBaseX + (wrapX/2)) % wrapX + wrapX) % wrapX - (wrapX/2);
                     }
 
-                    // Wrap buffer bounds precisely constrained to exactly match visual half-spaces modulo lengths
-                    let baseY = obj.baseY;
-                    if (animState.slideY) {
-                        const shift = phaseSlideY * obj.pFactor * slideYDir;
-                        if (obj.isTop) {
-                            baseY = ((obj.baseY + shift + 1.5) % 2.0 + 2.0) % 2.0 - 1.5;
-                        } else {
-                            baseY = ((obj.baseY + shift - 0.5) % 2.0 + 2.0) % 2.0 + 0.5;
-                        }
+                    let normalizedY;
+                    let scaleYSign = 1;
+                    let baseNormY = obj.baseY + 0.5;
+
+                    if (!isTopHalf && reflectTog) {
+                        normalizedY = 1.0 - (baseNormY + (pY / 100));
+                        scaleYSign = -1;
+                    } else {
+                        normalizedY = baseNormY + (pY / 100);
                     }
 
-                    let passes = forceReflect ? [false, true] : [false];
+                    let x = (currentBaseX + (pX / 100)) * W;
+                    let y = normalizedY * H;
+                    let objRotation = obj.rotation;
 
-                    passes.forEach(isReflection => {
-                        let normalizedY;
-                        let scaleYSign = 1;
+                    let diveScaleMultiplier = 1;
+                    let diveAlphaMultiplier = 1;
+                    let blurAmt = 0;
 
-                        if (isReflection) {
-                            let topNormY = baseY + (pY / 100) - dY;
-                            normalizedY = 1.0 - topNormY;
-                            scaleYSign = -1;
-                        } else {
-                            if (obj.isTop) {
-                                normalizedY = baseY + (pY / 100) - dY;
-                            } else {
-                                normalizedY = baseY + (pY / 100) + dY;
-                            }
+                    if (animState.dive) {
+                        let currentZ = (obj.z - phaseDive) % 1.0;
+                        if (currentZ < 0) currentZ += 1.0;
+
+                        let t = 1.0 - currentZ;
+                        let motionScale = parseFloat(document.getElementById('animScale').value) / 10;
+
+                        diveScaleMultiplier = t * motionScale;
+
+                        let fadeIn = Math.min(1, t / fadeDist);
+                        let fadeOut = Math.min(1, (1 - t) / fadeDist);
+                        diveAlphaMultiplier = Math.min(fadeIn, fadeOut);
+
+                        if (useBlur && (1 - t < fadeDist)) {
+                            let blurRatio = 1 - ((1 - t) / fadeDist);
+                            blurAmt = blurRatio * blurMax;
                         }
 
-                        let x = (currentBaseX + (pX / 100)) * W;
-                        let y = normalizedY * H;
-                        let objRotation = obj.rotation;
+                        let dxCenter = x - W/2;
+                        let dyCenter = y - H/2;
+                        x = W/2 + dxCenter * diveScaleMultiplier;
+                        y = H/2 + dyCenter * diveScaleMultiplier;
+                    }
 
-                        let diveScaleMultiplier = 1;
-                        let diveAlphaMultiplier = 1;
+                    if (animState.rotate) {
+                        const rotSign = isTopHalf ? 1 : -1;
+                        const rot = phaseRotate * rotSign;
+                        let dxCenter = x - W/2;
+                        let dyCenter = y - H/2;
+                        let r = Math.sqrt(dxCenter*dxCenter + dyCenter*dyCenter);
+                        let a = Math.atan2(dyCenter, dxCenter) + rot;
+                        x = W/2 + r * Math.cos(a);
+                        y = H/2 + r * Math.sin(a);
+                        objRotation += rot;
+                    }
 
-                        if (animState.dive) {
-                            let currentZ = (obj.z - phaseDive) % 1.0;
-                            if (currentZ < 0) currentZ += 1.0;
+                    let cData = getCurveData(x, W, cx, anchorY, cyCtrl);
+                    let deflection = cData.curveY - peakY;
+                    y = y + (deflection * warpPull);
 
-                            let t = 1.0 - currentZ;
-                            let motionScale = parseFloat(document.getElementById('animScale').value) / 10;
+                    let dxC = x - W/2;
+                    let dyC = y - H/2;
 
-                            diveScaleMultiplier = t * motionScale;
+                    let xNorm = Math.max(-1, Math.min(1, dxC / (W/2)));
+                    let yNorm = Math.max(-1, Math.min(1, dyC / (H/2)));
+                    let cornerProximity = Math.abs(xNorm * yNorm);
+                    let warpFactor = Math.pow(cornerProximity, 2) * 2.5;
 
-                            let fadeIn = Math.min(1, t * 10);
-                            let fadeOut = Math.min(1, (1 - t) * 8);
-                            diveAlphaMultiplier = Math.min(fadeIn, fadeOut);
+                    if (cornerPullVal > 0) {
+                        let pullAmt = warpFactor * cornerPullVal * 0.8;
+                        x += dxC * pullAmt;
+                        y += dyC * pullAmt;
+                    }
 
-                            let dxCenter = x - W/2;
-                            let dyCenter = y - H/2;
-                            x = W/2 + dxCenter * diveScaleMultiplier;
-                            y = H/2 + dyCenter * diveScaleMultiplier;
-                        }
+                    let newNormY = y / H;
+                    let distToCenter = Math.abs(newNormY - 0.5) * 2;
+                    let horizonProximity = Math.max(0, Math.min(1, 1 - distToCenter));
 
-                        if (animState.rotate) {
-                            const rotSign = isTopHalf ? 1 : -1;
-                            const rot = phaseRotate * rotSign;
-                            let dxCenter = x - W/2;
-                            let dyCenter = y - H/2;
-                            let r = Math.sqrt(dxCenter*dxCenter + dyCenter*dyCenter);
-                            let a = Math.atan2(dyCenter, dxCenter) + rot;
-                            x = W/2 + r * Math.cos(a);
-                            y = H/2 + r * Math.sin(a);
-                            objRotation += rot;
-                        }
+                    let horizonShrink = (obj.baseSize - sFarVal) * horizonProximity * warpPull;
+                    let perspSize = Math.max(sFarVal * 0.3, obj.size - Math.max(0, horizonShrink));
+                    let finalSize = perspSize * diveScaleMultiplier;
 
-                        let cData = getCurveData(x, W, cx, anchorY, cyCtrl);
-                        let deflection = cData.curveY - peakY;
-                        y = y + (deflection * warpPull);
+                    let warpAngle = cData.angle * warpPull;
+                    let tangentStretch = 1 + (Math.abs(warpAngle) * 0.6 * warpPull);
+                    
+                    let baseS = (finalSize / 100) * (W / 1200);
+                    let customS = shape.relativeSize / 100;
+                    let finalScale = (baseS * customS) * (50 / 256); // 512px canvas normalization
 
-                        let dxC = x - W/2;
-                        let dyC = y - H/2;
+                    let pullStretch = (cornerPullVal > 0 && warpFactor > 0.01) ? 1 + (warpFactor * cornerPullVal * 6) : 1;
+                    let maxRadius = 350 * (baseS * customS) * Math.max(tangentStretch, pullStretch);
+                    if (x + maxRadius < 0 || x - maxRadius > W || y + maxRadius < 0 || y - maxRadius > H) {
+                        return;
+                    }
 
-                        let xNorm = Math.max(-1, Math.min(1, dxC / (W/2)));
-                        let yNorm = Math.max(-1, Math.min(1, dyC / (H/2)));
-                        let cornerFactor = Math.pow(Math.abs(xNorm * yNorm), 2);
+                    ctx.save();
+                    ctx.translate(x, y);
 
-                        if (cornerPullVal > 0) {
-                            let pullAmt = cornerFactor * cornerPullVal * 0.8;
-                            x += dxC * pullAmt;
-                            y += dyC * pullAmt;
-                        }
+                    if (cornerPullVal > 0 && warpFactor > 0.01) {
+                        let angleToCorner = Math.atan2(dyC, dxC);
+                        ctx.rotate(angleToCorner);
+                        ctx.scale(pullStretch, 1);
+                        ctx.rotate(-angleToCorner);
+                    }
 
-                        let newNormY = y / H;
-                        let distToCenter = Math.abs(newNormY - 0.5) * 2;
-                        let horizonProximity = Math.max(0, Math.min(1, 1 - distToCenter));
+                    ctx.rotate(warpAngle);
+                    ctx.scale(finalScale * tangentStretch, finalScale * scaleYSign);
+                    ctx.rotate(objRotation);
 
-                        let horizonShrink = (obj.baseSize - sFarVal) * horizonProximity * warpPull;
-                        let perspSize = Math.max(sFarVal * 0.3, obj.size - Math.max(0, horizonShrink));
-                        let finalSize = perspSize * diveScaleMultiplier;
+                    if (blurAmt > 0.1) {
+                        ctx.filter = `blur(${blurAmt.toFixed(1)}px)`;
+                    }
 
-                        let warpAngle = cData.angle * warpPull;
-                        let tangentStretch = 1 + (Math.abs(warpAngle) * 0.6 * warpPull);
-                        let s = (finalSize / 100) * (W / 1200);
+                    ctx.globalAlpha = opacities[obj.layerId] * diveAlphaMultiplier;
+                    
+                    // Draw perfectly normalized cached SVG
+                    ctx.drawImage(shape.canvas, -256, -256, 512, 512);
 
-                        let pullStretch = (cornerPullVal > 0 && cornerFactor > 0.01) ? 1 + (cornerFactor * cornerPullVal * 6) : 1;
-                        let maxRadius = 350 * s * Math.max(tangentStretch, pullStretch);
-                        if (x + maxRadius < 0 || x - maxRadius > W || y + maxRadius < 0 || y - maxRadius > H) {
-                            return;
-                        }
-
-                        ctx.save();
-                        ctx.translate(x, y);
-
-                        if (cornerPullVal > 0 && cornerFactor > 0.01) {
-                            let angleToCorner = Math.atan2(dyC, dxC);
-                            ctx.rotate(angleToCorner);
-                            ctx.scale(pullStretch, 1);
-                            ctx.rotate(-angleToCorner);
-                        }
-
-                        ctx.rotate(warpAngle);
-                        ctx.scale(s * tangentStretch, s * scaleYSign);
-                        ctx.rotate(objRotation);
-
-                        ctx.globalAlpha = opacities[obj.layerId] * diveAlphaMultiplier;
-                        ctx.translate(-pathDefs[obj.shapeId].cx, -pathDefs[obj.shapeId].cy);
-
-                        ctx.fillStyle = overrideTog ? overrideColor : shapeColors[obj.shapeId];
-                        ctx.fill(path2DInstances[obj.shapeId]);
-
-                        if (pseudo3D) {
-                            let gw = pathDefs[obj.shapeId].cx * 2;
-                            let gh = pathDefs[obj.shapeId].cy * 2;
-                            let g = ctx.createLinearGradient(0, 0, gw, gh);
-                            g.addColorStop(0, 'rgba(255,255,255,0.6)');
-                            g.addColorStop(1, 'rgba(0,0,0,0.5)');
-                            ctx.fillStyle = g;
-                            ctx.fill(path2DInstances[obj.shapeId]);
-                        }
-
-                        ctx.restore();
-                    });
+                    ctx.restore();
                 });
             }
 
-            // --- BUFFER MANAGEMENT ---
             function ensureBuffers(w, h) {
                 if (!dstImageData || dstImageData.width !== w || dstImageData.height !== h) {
                     srcImageData = ctx.createImageData(w, h);
                     dstImageData = ctx.createImageData(w, h);
                     dstU32 = new Uint32Array(dstImageData.data.buffer);
-                    prevSrcData = new Uint8ClampedArray(w * h * 4);
                 }
             }
 
@@ -1602,7 +1812,6 @@
                         const xNorm = dxC / halfW;
                         const yNorm = dyC / halfH;
                         
-                        // Smoothly target only the corners, avoiding the hard frame cutoff
                         const cornerProximity = Math.abs(xNorm * yNorm);
                         const warpFactor = Math.pow(cornerProximity, 2) * 2.5;
 
@@ -1619,7 +1828,6 @@
                         const centerX = x + finalCx;
                         const centerY = y + finalCy;
 
-                        // Used for SVG Export Hook
                         if (window.isExportingSvgDither && window.svgDotsList) {
                             window.svgDotsList.push({
                                 cx: centerX.toFixed(2),
@@ -1653,222 +1861,6 @@
                 }
             }
 
-            function spawnParticle(idx, x, y, col, size, lifeSeconds) {
-                dust.x[idx] = x;
-                dust.y[idx] = y;
-                dust.vx[idx] = (Math.random() - 0.5) * 20;
-                dust.vy[idx] = (Math.random() - 0.5) * 20;
-                dust.age[idx] = 0;
-                dust.life[idx] = lifeSeconds;
-                dust.col[idx] = col;
-                dust.size[idx] = size;
-                dust.alive[idx] = 1;
-            }
-
-            function seedDustOverlay(w, h, srcData, dt) {
-                const lifeSec = parseFloat(dustLifeRange.value) / 20;
-                const dotScaleVal = parseFloat(dotScaleRange.value) / 100;
-                const gridSize = parseInt(gridSizeRange.value);
-                const dustSizeMult = parseFloat(document.getElementById('dustSize').value) / 100;
-                const radius = Math.max(0.5, (gridSize * 0.5) * dotScaleVal) * dustSizeMult;
-
-                const steadyRate = DUST_BUDGET / Math.max(0.5, lifeSec);
-                const maxToSpawn = Math.max(1, Math.floor(steadyRate * dt * 1.2));
-
-                let spawned = 0;
-                let attempts = 0;
-                const maxAttempts = maxToSpawn * 20;
-
-                while (spawned < maxToSpawn && attempts < maxAttempts) {
-                    attempts++;
-                    const sx = (Math.random() * w) | 0;
-                    const sy = (Math.random() * h) | 0;
-                    const sIdx = (sy * w + sx) * 4;
-                    const r = srcData[sIdx];
-                    const g = srcData[sIdx + 1];
-                    const b = srcData[sIdx + 2];
-                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                    if (lum < 12) continue;
-
-                    let slot = -1;
-                    for (let tries = 0; tries < DUST_BUDGET; tries++) {
-                        const s = (dustHead + tries) % DUST_BUDGET;
-                        if (!dust.alive[s]) { slot = s; break; }
-                    }
-                    if (slot === -1) break;
-
-                    const packed = packRGBA(r, g, b, 255);
-                    const myLife = lifeSec * (0.7 + Math.random() * 0.6);
-                    spawnParticle(slot, sx, sy, packed, radius, myLife);
-                    dustHead = (slot + 1) % DUST_BUDGET;
-                    spawned++;
-                }
-            }
-
-            function renderDustOverlay(w, h, srcData, dt) {
-                const driftStrength = parseFloat(dustDriftRange.value) / 100;
-                const curlStrength = parseFloat(dotWarpRange.value) / 100;
-                const swirlStrength = parseFloat(document.getElementById('dustSwirl').value) / 100;
-                const pullStrength = parseFloat(document.getElementById('dustPull').value) / 100;
-                const inheritStrength = parseFloat(document.getElementById('dustInherit').value) / 100;
-                const replication = parseFloat(document.getElementById('dustReplicate').value) / 100; 
-
-                const resScale = w / 1200;
-                const damping = 0.85;
-                const curlAmp = 120.0 * curlStrength * resScale;
-                const driftAmp = 40.0 * driftStrength * resScale;
-                const swirlAmp = 200.0 * swirlStrength * resScale;
-                const pullAmp = 300.0 * pullStrength * resScale;
-                const inheritAmp = 400.0 * inheritStrength * resScale;
-                const maxSpeed = 220.0 * resScale;
-                const maxSpeedSq = maxSpeed * maxSpeed;
-
-                const gradStep = Math.max(2, (3 * resScale) | 0);
-
-                const sampleLum = (sx, sy) => {
-                    if (sx < 0 || sx >= w || sy < 0 || sy >= h) return 0;
-                    const idx = ((sy | 0) * w + (sx | 0)) * 4;
-                    return 0.299 * srcData[idx] + 0.587 * srcData[idx + 1] + 0.114 * srcData[idx + 2];
-                };
-                const sampleLumPrev = (sx, sy) => {
-                    if (sx < 0 || sx >= w || sy < 0 || sy >= h) return 0;
-                    const idx = ((sy | 0) * w + (sx | 0)) * 4;
-                    return 0.299 * prevSrcData[idx] + 0.587 * prevSrcData[idx + 1] + 0.114 * prevSrcData[idx + 2];
-                };
-
-                const lifeMult = 1.0 + replication;
-                const childSpawns = [];
-                const replicationActive = replication > 0;
-
-                for (let i = 0; i < DUST_BUDGET; i++) {
-                    if (!dust.alive[i]) continue;
-
-                    let x = dust.x[i];
-                    let y = dust.y[i];
-                    let vx = dust.vx[i];
-                    let vy = dust.vx[i];
-
-                    const cn = curlNoise(x, y, 1);
-                    vx = vx * damping + cn.dx * curlAmp * dt;
-                    vy = vy * damping + cn.dy * curlAmp * dt;
-
-                    if (pullStrength > 0) {
-                        const lumL = sampleLum(x - gradStep, y);
-                        const lumR = sampleLum(x + gradStep, y);
-                        const lumU = sampleLum(x, y - gradStep);
-                        const lumD = sampleLum(x, y + gradStep);
-                        const gx = (lumR - lumL) / 255.0;
-                        const gy = (lumD - lumU) / 255.0;
-                        vx += gx * pullAmp * dt;
-                        vy += gy * pullAmp * dt;
-                    }
-
-                    if (swirlStrength > 0) {
-                        const lumL = sampleLum(x - gradStep, y);
-                        const lumR = sampleLum(x + gradStep, y);
-                        const lumU = sampleLum(x, y - gradStep);
-                        const lumD = sampleLum(x, y + gradStep);
-                        const gx = (lumR - lumL) / 255.0;
-                        const gy = (lumD - lumU) / 255.0;
-                        const hand = (i & 1) ? 1 : -1;
-                        vx += -gy * hand * swirlAmp * dt;
-                        vy +=  gx * hand * swirlAmp * dt;
-                    }
-
-                    if (inheritStrength > 0) {
-                        const curC = sampleLum(x, y);
-                        const prevL = sampleLumPrev(x - gradStep, y);
-                        const prevR = sampleLumPrev(x + gradStep, y);
-                        const prevU = sampleLumPrev(x, y - gradStep);
-                        const prevD = sampleLumPrev(x, y + gradStep);
-                        const dxFlow = (prevR - prevL) / 255.0;
-                        const dyFlow = (prevD - prevU) / 255.0;
-                        const curMag = curC / 255.0;
-                        vx += dxFlow * curMag * inheritAmp * dt;
-                        vy += dyFlow * curMag * inheritAmp * dt;
-                    }
-
-                    const j1 = (fastHash(i, frameSeed, 7) - 0.5) * driftAmp * dt;
-                    const j2 = (fastHash(i, frameSeed, 11) - 0.5) * driftAmp * dt;
-                    vx += j1;
-                    vy += j2;
-
-                    const speedSq = vx * vx + vy * vy;
-                    if (speedSq > maxSpeedSq) {
-                        const sc = maxSpeed / Math.sqrt(speedSq);
-                        vx *= sc;
-                        vy *= sc;
-                    }
-
-                    x += vx * dt;
-                    y += vy * dt;
-                    dust.age[i] += dt / (dust.life[i] * Math.max(0.15, lifeMult));
-
-                    if (dust.age[i] >= 1.0 || x < 0 || x >= w || y < 0 || y >= h) {
-                        if (replicationActive && x >= 0 && x < w && y >= 0 && y < h) {
-                            const childCount = replication > 0.5 ? 2 : 1;
-                            for (let c = 0; c < childCount; c++) {
-                                const angleJitter = (Math.random() - 0.5) * 0.8;
-                                const ca = Math.cos(angleJitter);
-                                const sa = Math.sin(angleJitter);
-                                childSpawns.push({
-                                    x: x, y: y,
-                                    vx: vx * ca - vy * sa,
-                                    vy: vx * sa + vy * ca,
-                                    col: dust.col[i],
-                                    size: dust.size[i],
-                                    life: dust.life[i] * 0.7
-                                });
-                            }
-                        }
-                        dust.alive[i] = 0;
-                        continue;
-                    }
-
-                    dust.x[i] = x;
-                    dust.y[i] = y;
-                    dust.vx[i] = vx;
-                    dust.vy[i] = vy;
-
-                    const a = dust.age[i];
-                    const fadeIn = Math.min(1.0, a * 8.0);
-                    const fadeOut = Math.min(1.0, (1.0 - a) * 4.0);
-                    const alpha = Math.min(fadeIn, fadeOut);
-
-                    const col = dust.col[i];
-                    const brightnessMult = parseFloat(document.getElementById('dustBrightness').value) / 100;
-                    const boost = brightnessMult + Math.max(0, replication) * 0.3;
-                    const r = Math.min(255, ((col & 0xff) * boost) | 0);
-                    const g = Math.min(255, (((col >> 8) & 0xff) * boost) | 0);
-                    const b = Math.min(255, (((col >> 16) & 0xff) * boost) | 0);
-
-                    dotCtx.fillStyle = `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
-                    dotCtx.beginPath();
-                    dotCtx.arc(x, y, dust.size[i], 0, Math.PI * 2);
-                    dotCtx.fill();
-                }
-
-                for (let k = 0; k < childSpawns.length; k++) {
-                    let slot = -1;
-                    for (let tries = 0; tries < DUST_BUDGET; tries++) {
-                        const s = (dustHead + tries) % DUST_BUDGET;
-                        if (!dust.alive[s]) { slot = s; break; }
-                    }
-                    if (slot === -1) break;
-                    const cs = childSpawns[k];
-                    dust.x[slot] = cs.x;
-                    dust.y[slot] = cs.y;
-                    dust.vx[slot] = cs.vx;
-                    dust.vy[slot] = cs.vy;
-                    dust.age[slot] = 0;
-                    dust.life[slot] = cs.life;
-                    dust.col[slot] = cs.col;
-                    dust.size[slot] = cs.size;
-                    dust.alive[slot] = 1;
-                    dustHead = (slot + 1) % DUST_BUDGET;
-                }
-            }
-
             function applyPostProcessing(dt) {
                 const effect = postEffectSel.value;
                 if (effect === 'none') return;
@@ -1884,16 +1876,9 @@
                 renderBayerFullCoverage(w, h, srcData);
                 dotCtx.putImageData(dstImageData, 0, 0);
 
-                if (dustLifecycleTog.checked) {
-                    seedDustOverlay(w, h, srcData, dt);
-                    renderDustOverlay(w, h, srcData, dt);
-                }
-
-                prevSrcData.set(srcData);
-
                 if (trailTog.checked) {
                     const trailVal = parseFloat(trailLengthRange.value) / 100;
-                    const trailRetention = 0.5 + (trailVal * 0.49); // Scales 0->0.5, 1->0.99
+                    const trailRetention = 0.5 + (trailVal * 0.49); 
                     trailCtx.globalCompositeOperation = 'destination-out';
                     trailCtx.fillStyle = `rgba(0, 0, 0, ${Math.max(0, 1.0 - trailRetention)})`;
                     trailCtx.fillRect(0, 0, w, h);
@@ -1912,11 +1897,16 @@
                 ctx.drawImage(trailCanvas, 0, 0);
             }
 
-            function updateGraphic(dt) {
+            window.updateGraphic = function(dt) {
                 dt = dt || 0.016;
 
-                let [ratioW, ratioH] = formatSel.value.split(':').map(Number);
-                if (orientationSel.value === 'vertical') [ratioW, ratioH] = [ratioH, ratioW];
+                let [r1, r2] = formatSel.value.split(':').map(Number);
+                let ratioW = Math.max(r1, r2);
+                let ratioH = Math.min(r1, r2);
+                if (orientationSel.value === 'vertical') {
+                    ratioW = Math.min(r1, r2);
+                    ratioH = Math.max(r1, r2);
+                }
                 const aspect = ratioW / ratioH;
 
                 const EXPORT_RESOLUTION = getRenderResolution();
@@ -1927,7 +1917,6 @@
                     canvas.width = W; canvas.height = H;
                     dotCanvas.width = W; dotCanvas.height = H;
                     trailCanvas.width = W; trailCanvas.height = H;
-                    for (let i = 0; i < DUST_BUDGET; i++) dust.alive[i] = 0;
                     dstImageData = null; 
                 }
 
@@ -1941,8 +1930,7 @@
                 touchpoint.style.width = `${cssW}px`;
                 touchpoint.style.height = `${cssH}px`;
 
-                const hCurveVal = parseFloat(hCurveRange.value);
-                document.getElementById('val-hCurve').innerText = hCurveVal;
+                document.getElementById('val-hCurve').innerText = hCurveRange.value;
                 document.getElementById('val-edgePinch').innerText = document.getElementById('edgePinch').value;
                 document.getElementById('val-warpPull').innerText = document.getElementById('warpPull').value;
                 document.getElementById('val-cornerPull').innerText = document.getElementById('cornerPull').value;
@@ -1953,24 +1941,17 @@
                 document.getElementById('val-dotJitter').innerText = dotJitterRange.value;
                 document.getElementById('val-dotWarp').innerText = dotWarpRange.value;
                 document.getElementById('val-trailLength').innerText = trailLengthRange.value;
-                document.getElementById('val-dustLife').innerText = dustLifeRange.value;
-                document.getElementById('val-dustDrift').innerText = dustDriftRange.value;
-                document.getElementById('val-dustReplicate').innerText = (parseFloat(document.getElementById('dustReplicate').value) / 100).toFixed(2);
-                document.getElementById('val-dustSwirl').innerText = document.getElementById('dustSwirl').value;
-                document.getElementById('val-dustPull').innerText = document.getElementById('dustPull').value;
-                document.getElementById('val-dustInherit').innerText = document.getElementById('dustInherit').value;
-                document.getElementById('val-dustSize').innerText = document.getElementById('dustSize').value;
-                document.getElementById('val-dustBrightness').innerText = document.getElementById('dustBrightness').value;
                 
-                // Export Tab Badges
                 document.getElementById('val-renderDensity').innerText = document.getElementById('renderDensity').value;
                 document.getElementById('val-exportPngSize').innerText = document.getElementById('exportPngSize').value;
                 document.getElementById('val-exportWebmSize').innerText = document.getElementById('exportWebmSize').value;
                 document.getElementById('val-exportWebmDuration').innerText = document.getElementById('exportWebmDuration').value;
 
-                document.querySelectorAll('.shape-val').forEach(el => {
-                    document.getElementById(el.dataset.target).innerText = el.value;
-                });
+                document.getElementById('val-animSpeedSlideX').innerText = document.getElementById('animSpeedSlideX').value;
+                document.getElementById('val-animSpeedDive').innerText = document.getElementById('animSpeedDive').value;
+                document.getElementById('val-animSpeedRotate').innerText = document.getElementById('animSpeedRotate').value;
+                document.getElementById('val-fadeDuration').innerText = document.getElementById('fadeDuration').value;
+                document.getElementById('val-diveBlurMax').innerText = document.getElementById('diveBlurMax').value;
 
                 const dive = parseFloat(diveRange.value);
                 const panX = parseFloat(panXRange.value);
@@ -1989,7 +1970,7 @@
                 let peakTop = baseDepth + shiftY;
                 let peakBot = baseDepth - shiftY;
 
-                const c = hCurveVal / 100;
+                const c = parseFloat(hCurveRange.value) / 100;
                 const flatDepth = H * 0.01;
 
                 const edgePinchVal = parseFloat(document.getElementById('edgePinch').value) / 100;
@@ -2039,7 +2020,9 @@
                 applyPostProcessing(dt);
             }
 
-            window.triggerGraphicUpdate = () => updateGraphic(0.016);
+            window.triggerGraphicUpdate = function(dt) {
+                window.updateGraphic(typeof dt === 'number' ? dt : 0.016);
+            };
 
             function updateFpsUI(fps) {
                 document.getElementById('fps-text').innerText = `${fps} FPS`;
@@ -2072,83 +2055,75 @@
 
                 if (dt > 0.1) dt = 0.1;
 
-                const isAnimating = animState.dive || animState.slideX || animState.slideY || animState.rotate;
-                const lifecycleOn = dustLifecycleTog.checked && postEffectSel.value !== 'none';
+                const isAnimating = animState.dive || animState.slideX || animState.rotate;
 
                 if (isAnimating) {
-                    let speedFactor = (animSpeed / 50);
-                    if (animState.dive) phaseDive += speedFactor * 0.2 * dt;
-                    if (animState.slideX) phaseSlide += speedFactor * 0.2 * dt;
-                    if (animState.slideY) phaseSlideY += speedFactor * 0.2 * dt;
-                    if (animState.rotate) phaseRotate += speedFactor * 0.5 * dt;
-                    updateGraphic(dt);
-                } else if (lifecycleOn) {
-                    updateGraphic(dt);
+                    let speedDive = parseFloat(document.getElementById('animSpeedDive').value) / 50;
+                    let speedSlideX = parseFloat(document.getElementById('animSpeedSlideX').value) / 50;
+                    let speedRotate = parseFloat(document.getElementById('animSpeedRotate').value) / 50;
+
+                    if (animState.dive) phaseDive += speedDive * 0.2 * dt;
+                    if (animState.slideX) phaseSlide += speedSlideX * 0.2 * dt;
+                    if (animState.rotate) phaseRotate += speedRotate * 0.5 * dt;
+                    window.updateGraphic(dt);
+                } else if (postEffectSel.value !== 'none') {
+                    window.updateGraphic(dt);
                 }
 
                 animFrameReq = requestAnimationFrame(animLoop);
             }
 
-            animFrameReq = requestAnimationFrame(animLoop);
-
-            function anyAnimating() {
-                return animState.dive || animState.slideX || animState.slideY || animState.rotate;
+            window.anyAnimating = function() {
+                return animState.dive || animState.slideX || animState.rotate;
             }
 
             document.getElementById('animSlideXTog').addEventListener('change', (e) => {
                 animState.slideX = e.target.checked;
-                if(!anyAnimating()) updateGraphic(0.016);
-            });
-            document.getElementById('animSlideYTog').addEventListener('change', (e) => {
-                animState.slideY = e.target.checked;
-                if(!anyAnimating()) updateGraphic(0.016);
+                toggleAnimOpts('slideX', e.target.checked);
+                if(!anyAnimating()) window.triggerGraphicUpdate();
             });
             document.getElementById('animDiveTog').addEventListener('change', (e) => {
                 animState.dive = e.target.checked;
-                if(!anyAnimating()) updateGraphic(0.016);
+                toggleAnimOpts('dive', e.target.checked);
+                if(!anyAnimating()) window.triggerGraphicUpdate();
             });
             document.getElementById('animRotateTog').addEventListener('change', (e) => {
                 animState.rotate = e.target.checked;
-                if(!anyAnimating()) updateGraphic(0.016);
+                toggleAnimOpts('rotate', e.target.checked);
+                if(!anyAnimating()) window.triggerGraphicUpdate();
             });
             document.getElementById('slideXDir').addEventListener('change', (e) => {
                 slideXDir = e.target.value === 'left' ? -1 : 1;
             });
-            document.getElementById('slideYDir').addEventListener('change', (e) => {
-                slideYDir = e.target.value === 'up' ? -1 : 1;
+            document.getElementById('diveBlurTog').addEventListener('change', (e) => {
+                document.getElementById('opts-blur').style.display = e.target.checked ? 'flex' : 'none';
+                if(!anyAnimating()) window.triggerGraphicUpdate();
             });
 
-            document.getElementById('animSpeed').addEventListener('input', (e) => {
-                animSpeed = parseFloat(e.target.value);
-                document.getElementById('val-animSpeed').innerText = animSpeed;
-            });
+            document.getElementById('animSpeedSlideX').addEventListener('input', () => { if(!anyAnimating()) window.triggerGraphicUpdate(); });
+            document.getElementById('animSpeedDive').addEventListener('input', () => { if(!anyAnimating()) window.triggerGraphicUpdate(); });
+            document.getElementById('animSpeedRotate').addEventListener('input', () => { if(!anyAnimating()) window.triggerGraphicUpdate(); });
+            document.getElementById('fadeDuration').addEventListener('input', () => { if(!anyAnimating()) window.triggerGraphicUpdate(); });
+            document.getElementById('diveBlurMax').addEventListener('input', () => { if(!anyAnimating()) window.triggerGraphicUpdate(); });
 
             document.getElementById('animScale').addEventListener('input', (e) => {
-                let val = parseFloat(e.target.value) / 10;
-                document.getElementById('val-animScale').innerText = val.toFixed(1);
-                if(!anyAnimating()) updateGraphic(0.016);
+                document.getElementById('val-animScale').innerText = (parseFloat(e.target.value) / 10).toFixed(1);
+                if(!anyAnimating()) window.triggerGraphicUpdate();
             });
 
-            postEffectSel.addEventListener('change', () => updateGraphic(0.016));
-            effectDensityRange.addEventListener('input', () => updateGraphic(0.016));
-            gridSizeRange.addEventListener('input', () => updateGraphic(0.016));
-            dotScaleRange.addEventListener('input', () => updateGraphic(0.016));
-            dotJitterRange.addEventListener('input', () => updateGraphic(0.016));
-            dotWarpRange.addEventListener('input', () => updateGraphic(0.016));
-            trailTog.addEventListener('change', () => updateGraphic(0.016));
-            trailLengthRange.addEventListener('input', () => updateGraphic(0.016));
-            dustLifecycleTog.addEventListener('change', () => {
-                for (let i = 0; i < DUST_BUDGET; i++) dust.alive[i] = 0;
-                updateGraphic(0.016);
+            postEffectSel.addEventListener('change', () => window.triggerGraphicUpdate());
+            effectDensityRange.addEventListener('input', () => window.triggerGraphicUpdate());
+            gridSizeRange.addEventListener('input', () => window.triggerGraphicUpdate());
+            dotScaleRange.addEventListener('input', () => window.triggerGraphicUpdate());
+            dotJitterRange.addEventListener('input', () => window.triggerGraphicUpdate());
+            dotWarpRange.addEventListener('input', () => window.triggerGraphicUpdate());
+            trailTog.addEventListener('change', () => window.triggerGraphicUpdate());
+            trailLengthRange.addEventListener('input', () => window.triggerGraphicUpdate());
+            
+            document.getElementById('resetPanBtn').addEventListener('click', () => {
+                resetSlider('panX');
+                resetSlider('panY');
             });
-            dustLifeRange.addEventListener('input', () => updateGraphic(0.016));
-            dustDriftRange.addEventListener('input', () => updateGraphic(0.016));
-            document.getElementById('dustReplicate').addEventListener('input', () => updateGraphic(0.016));
-            document.getElementById('dustSwirl').addEventListener('input', () => updateGraphic(0.016));
-            document.getElementById('dustPull').addEventListener('input', () => updateGraphic(0.016));
-            document.getElementById('dustInherit').addEventListener('input', () => updateGraphic(0.016));
-            document.getElementById('dustSize').addEventListener('input', () => updateGraphic(0.016));
-            document.getElementById('dustBrightness').addEventListener('input', () => updateGraphic(0.016));
 
             document.getElementById('saveBtn').addEventListener('click', () => {
                 let settings = {};
@@ -2156,6 +2131,13 @@
                     if (el.type === 'checkbox') settings[el.id] = el.checked;
                     else settings[el.id] = el.value;
                 });
+                
+                settings.shapes = shapes.map(s => ({
+                    id: s.id, originalSvg: s.originalSvg, custom: s.custom, hasCustomFill: s.hasCustomFill,
+                    customFill: s.customFill, strokeTog: s.strokeTog, strokeColor: s.strokeColor,
+                    strokeWeight: s.strokeWeight, relativeSize: s.relativeSize, weight: s.weight, viewBox: s.viewBox
+                }));
+
                 const blob = new Blob([JSON.stringify(settings, null, 2)], {type: 'application/json'});
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
@@ -2176,25 +2158,27 @@
                         const settings = JSON.parse(event.target.result);
                         if ('animSlideTog' in settings && !('animSlideXTog' in settings)) {
                             settings.animSlideXTog = settings.animSlideTog;
-                            delete settings.animSlideTog;
                         }
                         if ('exportSize' in settings && !('renderDensity' in settings)) {
                             settings.renderDensity = settings.exportSize;
-                            delete settings.exportSize;
                         }
+                        if ('animSpeed' in settings && !('animSpeedSlideX' in settings)) {
+                            settings.animSpeedSlideX = settings.animSpeed;
+                            settings.animSpeedDive = settings.animSpeed;
+                            settings.animSpeedRotate = settings.animSpeed;
+                        }
+
                         for (let id in settings) {
+                            if (id === 'shapes') continue;
                             const el = document.getElementById(id);
                             if (el) {
                                 if (el.type === 'checkbox') el.checked = settings[id];
                                 else el.value = settings[id];
 
                                 if (id === 'animSlideXTog') animState.slideX = el.checked;
-                                if (id === 'animSlideYTog') animState.slideY = el.checked;
                                 if (id === 'animDiveTog') animState.dive = el.checked;
                                 if (id === 'animRotateTog') animState.rotate = el.checked;
-                                if (id === 'animSpeed') animSpeed = parseFloat(el.value);
                                 if (id === 'slideXDir') slideXDir = el.value === 'left' ? -1 : 1;
-                                if (id === 'slideYDir') slideYDir = el.value === 'up' ? -1 : 1;
                             }
                         }
                         if (postEffectSel.value === 'stochastic_print') postEffectSel.value = 'dither_bayer';
@@ -2207,14 +2191,30 @@
                             }
                         });
 
-                        document.querySelectorAll('.shape-val').forEach(el => {
-                            if(document.getElementById(el.dataset.target)) {
-                                document.getElementById(el.dataset.target).innerText = el.value;
-                            }
-                        });
+                        toggleAnimOpts('slideX', document.getElementById('animSlideXTog').checked);
+                        toggleAnimOpts('dive', document.getElementById('animDiveTog').checked);
+                        toggleAnimOpts('rotate', document.getElementById('animRotateTog').checked);
+                        document.getElementById('opts-blur').style.display = document.getElementById('diveBlurTog').checked ? 'flex' : 'none';
+                        updateExportResolutions();
 
-                        initSpaceObjects();
-                        updateGraphic(0.016);
+                        if (settings.shapes && Array.isArray(settings.shapes)) {
+                            shapes = settings.shapes;
+                        } else if ('shape0' in settings) {
+                            // Legacy mapping
+                            initDefaultShapes();
+                            shapes[0].weight = parseInt(settings.shape0) || 20; shapes[0].customFill = settings.sc0; shapes[0].hasCustomFill = true;
+                            shapes[1].weight = parseInt(settings.shape1) || 20; shapes[1].customFill = settings.sc1; shapes[1].hasCustomFill = true;
+                            shapes[2].weight = parseInt(settings.shape2) || 20; shapes[2].customFill = settings.sc2; shapes[2].hasCustomFill = true;
+                            shapes[3].weight = parseInt(settings.shape3) || 25; shapes[3].customFill = settings.sc3; shapes[3].hasCustomFill = true;
+                            shapes[4].weight = parseInt(settings.shape4) || 28; shapes[4].customFill = settings.sc4; shapes[4].hasCustomFill = true;
+                        } else {
+                            initDefaultShapes();
+                        }
+
+                        refreshAllShapeCaches();
+                        renderShapeUI();
+                        window.initSpaceObjects();
+
                     } catch(err) {
                         const loadBtn = document.getElementById('loadBtn');
                         const origText = loadBtn.innerHTML;
@@ -2247,7 +2247,7 @@
                     panXRange.value = Math.max(-50, Math.min(50, panX));
                     panYRange.value = Math.max(-50, Math.min(50, panY));
 
-                    if(!anyAnimating()) updateGraphic(0.016);
+                    if(!anyAnimating()) window.triggerGraphicUpdate();
                 }
             });
 
@@ -2261,29 +2261,28 @@
                 const sensitivity = 0.15;
                 panXRange.value = Math.max(-50, Math.min(50, initialPanX - ((e.clientX - startX) * sensitivity)));
                 panYRange.value = Math.max(-50, Math.min(50, initialPanY - ((e.clientY - startY) * sensitivity)));
-                if(!anyAnimating()) updateGraphic(0.016);
+                if(!anyAnimating()) window.triggerGraphicUpdate();
             });
             window.addEventListener('mouseup', () => isDragging = false);
             window.addEventListener('mouseleave', () => isDragging = false);
 
-            const postprodIds = new Set(['postEffect','effectDensity','gridSize','dotScale','dotJitter','dotWarp','trailTog','trailLength','dustLifecycleTog','dustLife','dustDrift','dustReplicate','dustSwirl','dustPull','dustInherit','dustSize','dustBrightness']);
+            const postprodIds = new Set(['postEffect','effectDensity','gridSize','dotScale','dotJitter','dotWarp','trailTog','trailLength']);
             document.querySelectorAll('.ui-input').forEach(input => {
                 if (postprodIds.has(input.id)) return;
                 input.addEventListener('input', () => {
-                    if(!anyAnimating()) updateGraphic(0.016);
+                    if(!anyAnimating()) window.triggerGraphicUpdate();
                 });
             });
             document.querySelectorAll('.gen-input').forEach(input => {
                 input.addEventListener('input', () => {
-                    initSpaceObjects();
-                    if(!anyAnimating()) updateGraphic(0.016);
+                    window.initSpaceObjects();
+                    if(!anyAnimating()) window.triggerGraphicUpdate();
                 });
             });
 
-            // Make sure the new top bar Density slider updates graphics
             document.getElementById('renderDensity').addEventListener('input', () => {
                 document.getElementById('val-renderDensity').innerText = document.getElementById('renderDensity').value;
-                if(!anyAnimating()) updateGraphic(0.016);
+                if(!anyAnimating()) window.triggerGraphicUpdate();
             });
 
             function updateExportResolutions() {
@@ -2291,8 +2290,13 @@
                 const orientationSel = document.getElementById('orientation');
                 if(!formatSel || !orientationSel) return;
 
-                let [ratioW, ratioH] = formatSel.value.split(':').map(Number);
-                if (orientationSel.value === 'vertical') [ratioW, ratioH] = [ratioH, ratioW];
+                let [r1, r2] = formatSel.value.split(':').map(Number);
+                let ratioW = Math.max(r1, r2);
+                let ratioH = Math.min(r1, r2);
+                if (orientationSel.value === 'vertical') {
+                    ratioW = Math.min(r1, r2);
+                    ratioH = Math.max(r1, r2);
+                }
                 const aspect = ratioW / ratioH;
 
                 const pngSize = parseInt(document.getElementById('exportPngSize').value);
@@ -2308,7 +2312,6 @@
                 if(resWebm) resWebm.innerText = `${webmW} × ${webmH} px`;
             }
 
-            // Update badge text for export options
             ['exportPngSize', 'exportWebmSize', 'exportWebmDuration'].forEach(id => {
                 document.getElementById(id).addEventListener('input', (e) => {
                     document.getElementById('val-' + id).innerText = e.target.value;
@@ -2319,7 +2322,6 @@
             document.getElementById('format').addEventListener('change', updateExportResolutions);
             document.getElementById('orientation').addEventListener('change', updateExportResolutions);
             
-            // Initial call to set resolutions based on defaults
             updateExportResolutions();
 
             // --- EXPORT PANEL LOGIC ---
@@ -2374,22 +2376,20 @@
                 const warpPull = parseFloat(document.getElementById('warpPull').value) / 100;
                 const cornerPullVal = parseFloat(document.getElementById('cornerPull').value) / 100;
                 const reflectTog = document.getElementById('reflectTog').checked;
-                const overrideTog = document.getElementById('overrideTog').checked;
-                const overrideColor = document.getElementById('overrideColor').value;
                 const sFarVal = parseFloat(document.getElementById('sFar').value);
+                const fadeDist = parseFloat(document.getElementById('fadeDuration').value) / 100;
+                const useBlur = document.getElementById('diveBlurTog').checked;
+                const blurMax = parseFloat(document.getElementById('diveBlurMax').value);
+
+                const wrapX = 6.0;
+                const wrapY = 12.0;
+
                 const opacities = {
                     far:   parseFloat(document.getElementById('oFar').value) / 100,
                     mid:   parseFloat(document.getElementById('oMid').value) / 100,
                     close: parseFloat(document.getElementById('oClose').value) / 100
                 };
-                const shapeColors = [
-                    document.getElementById('sc0').value,
-                    document.getElementById('sc1').value,
-                    document.getElementById('sc2').value,
-                    document.getElementById('sc3').value,
-                    document.getElementById('sc4').value
-                ];
-                const pseudo3D = document.getElementById('pseudo3D').checked;
+
                 const bgR = parseInt(bgColorPicker.value.slice(1, 3), 16);
                 const bgG = parseInt(bgColorPicker.value.slice(3, 5), 16);
                 const bgB = parseInt(bgColorPicker.value.slice(5, 7), 16);
@@ -2406,44 +2406,34 @@
 
                 function emitObjects(isTopHalf, peakY) {
                     const out = [];
-                    const forceReflect = animState.slideY || reflectTog;
+                    const forceReflect = reflectTog;
 
                     spaceObjects.forEach(obj => {
-                        if (forceReflect && !obj.isTop) return;
+                        const shape = shapes[obj.shapeIdx];
+                        if (!shape || !shape.ready) return;
 
                         const pX = panX * obj.pFactor;
                         const pY = panY * obj.pFactor;
-                        const dY = dive * obj.pFactor * 0.003;
 
                         let currentBaseX = obj.baseX;
                         if (animState.slideX) {
-                            currentBaseX = obj.baseX + phaseSlide * obj.pFactor * slideXDir;
-                            currentBaseX = ((currentBaseX + 1.0) % 3.0 + 3.0) % 3.0 - 1.0;
+                            currentBaseX += phaseSlide * obj.pFactor * slideXDir;
+                            currentBaseX = ((currentBaseX + (wrapX/2)) % wrapX + wrapX) % wrapX - (wrapX/2);
                         }
                         
-                        let baseY = obj.baseY;
-                        if (animState.slideY) {
-                            const shift = phaseSlideY * obj.pFactor * slideYDir;
-                            if (obj.isTop) {
-                                baseY = ((obj.baseY + shift + 1.5) % 2.0 + 2.0) % 2.0 - 1.5;
-                            } else {
-                                baseY = ((obj.baseY + shift - 0.5) % 2.0 + 2.0) % 2.0 + 0.5;
-                            }
-                        }
-
                         const passes = forceReflect ? [false, true] : [false];
                         passes.forEach(isReflection => {
                             if (isReflection && !obj.isTop) return;
 
                             let normalizedY;
                             let scaleYSign = 1;
-                            if (isReflection) {
-                                normalizedY = 1.0 - (baseY + (pY / 100) - dY);
+                            let baseNormY = obj.baseY + 0.5;
+
+                            if (!isTopHalf && isReflection) {
+                                normalizedY = 1.0 - (baseNormY + (pY / 100));
                                 scaleYSign = -1;
-                            } else if (obj.isTop) {
-                                normalizedY = baseY + (pY / 100) - dY;
                             } else {
-                                normalizedY = baseY + (pY / 100) + dY;
+                                normalizedY = baseNormY + (pY / 100);
                             }
 
                             let x = (currentBaseX + (pX / 100)) * W;
@@ -2452,15 +2442,24 @@
 
                             let diveScaleMultiplier = 1;
                             let diveAlphaMultiplier = 1;
+                            let blurAmt = 0;
+
                             if (animState.dive) {
                                 let currentZ = (obj.z - phaseDive) % 1.0;
                                 if (currentZ < 0) currentZ += 1.0;
                                 const t = 1.0 - currentZ;
                                 const motionScale = parseFloat(document.getElementById('animScale').value) / 10;
                                 diveScaleMultiplier = t * motionScale;
-                                const fadeIn = Math.min(1, t * 10);
-                                const fadeOut = Math.min(1, (1 - t) * 8);
+
+                                let fadeIn = Math.min(1, t / fadeDist);
+                                let fadeOut = Math.min(1, (1 - t) / fadeDist);
                                 diveAlphaMultiplier = Math.min(fadeIn, fadeOut);
+
+                                if (useBlur && (1 - t < fadeDist)) {
+                                    let blurRatio = 1 - ((1 - t) / fadeDist);
+                                    blurAmt = blurRatio * blurMax;
+                                }
+
                                 const dxC = x - W/2, dyC = y - H/2;
                                 x = W/2 + dxC * diveScaleMultiplier;
                                 y = H/2 + dyC * diveScaleMultiplier;
@@ -2486,10 +2485,11 @@
                             const dxC = x - W/2, dyC = y - H/2;
                             const xNorm = Math.max(-1, Math.min(1, dxC / (W/2)));
                             const yNorm = Math.max(-1, Math.min(1, dyC / (H/2)));
-                            const cornerFactor = Math.pow(Math.abs(xNorm * yNorm), 2);
+                            const cornerProximity = Math.abs(xNorm * yNorm);
+                            const warpFactor = Math.pow(cornerProximity, 2) * 2.5;
                             let xOut = x, yOut = y;
                             if (cornerPullVal > 0) {
-                                const pullAmt = cornerFactor * cornerPullVal * 0.8;
+                                const pullAmt = warpFactor * cornerPullVal * 0.8;
                                 xOut += dxC * pullAmt;
                                 yOut += dyC * pullAmt;
                             }
@@ -2502,14 +2502,18 @@
                             const finalSize = perspSize * diveScaleMultiplier;
                             const warpAngle = cData.angle * warpPull;
                             const tangentStretch = 1 + (Math.abs(warpAngle) * 0.6 * warpPull);
-                            const s = (finalSize / 100) * (W / 1200);
-                            const pullStretch = (cornerPullVal > 0 && cornerFactor > 0.01) ? 1 + (cornerFactor * cornerPullVal * 6) : 1;
-                            const maxRadius = 350 * s * Math.max(tangentStretch, pullStretch);
+                            
+                            let baseS = (finalSize / 100) * (W / 1200);
+                            let customS = shape.relativeSize / 100;
+                            let s = (baseS * customS) * (50 / 256); 
+                            
+                            const pullStretch = (cornerPullVal > 0 && warpFactor > 0.01) ? 1 + (warpFactor * cornerPullVal * 6) : 1;
+                            const maxRadius = 350 * (baseS * customS) * Math.max(tangentStretch, pullStretch);
                             if (xOut + maxRadius < 0 || xOut - maxRadius > W || yOut + maxRadius < 0 || yOut - maxRadius > H) return;
 
                             const transforms = [];
                             transforms.push(`translate(${xOut.toFixed(2)} ${yOut.toFixed(2)})`);
-                            if (cornerPullVal > 0 && cornerFactor > 0.01) {
+                            if (cornerPullVal > 0 && warpFactor > 0.01) {
                                 const angleToCorner = Math.atan2(dyC, dxC) * 180 / Math.PI;
                                 transforms.push(`rotate(${angleToCorner.toFixed(2)})`);
                                 transforms.push(`scale(${pullStretch.toFixed(3)} 1)`);
@@ -2518,21 +2522,17 @@
                             transforms.push(`rotate(${(warpAngle * 180 / Math.PI).toFixed(2)})`);
                             transforms.push(`scale(${(s * tangentStretch).toFixed(4)} ${(s * scaleYSign).toFixed(4)})`);
                             transforms.push(`rotate(${(objRotation * 180 / Math.PI).toFixed(2)})`);
-                            transforms.push(`translate(${(-pathDefs[obj.shapeId].cx).toFixed(2)} ${(-pathDefs[obj.shapeId].cy).toFixed(2)})`);
 
-                            const fillColor = overrideTog ? overrideColor : shapeColors[obj.shapeId];
                             const opacity = (opacities[obj.layerId] * diveAlphaMultiplier).toFixed(3);
-                            const pathD = pathDefs[obj.shapeId].d;
+                            let filterStr = blurAmt > 0.1 ? ` filter="url(#blur-${Math.ceil(blurAmt)})"` : '';
 
-                            out.push(`<g transform="${transforms.join(' ')}" opacity="${opacity}">`);
-                            out.push(`<path d="${pathD}" fill="${fillColor}"/>`);
-                            if (pseudo3D) {
-                                const gw = pathDefs[obj.shapeId].cx * 2;
-                                const gh = pathDefs[obj.shapeId].cy * 2;
-                                const gid = `p3d-${obj.shapeId}`;
-                                out.push(`<path d="${pathD}" fill="url(#${gid})"/>`);
-                            }
-                            out.push(`</g>`);
+                            const innerSvgMatch = shape.modifiedSvg.match(/<svg[^>]*>([\s\S]*?)<\/svg>/i);
+                            const innerSvg = innerSvgMatch ? innerSvgMatch[1] : '';
+
+                            out.push(`<g transform="${transforms.join(' ')}" opacity="${opacity}"${filterStr}>`);
+                            out.push(`<svg x="-256" y="-256" width="512" height="512" viewBox="${shape.viewBox}" preserveAspectRatio="xMidYMid meet">`);
+                            out.push(innerSvg);
+                            out.push(`</svg></g>`);
                         });
                     });
                     return out.join('');
@@ -2546,15 +2546,10 @@
                     <stop offset="1" stop-color="${cc3}"/>`;
                 const gradBotStops = gradTopStops;
 
-                let p3dDefs = '';
-                if (pseudo3D) {
-                    for (let i = 0; i < pathDefs.length; i++) {
-                        const gw = pathDefs[i].cx * 2;
-                        const gh = pathDefs[i].cy * 2;
-                        p3dDefs += `<linearGradient id="p3d-${i}" x1="0" y1="0" x2="${gw}" y2="${gh}" gradientUnits="userSpaceOnUse">
-                            <stop offset="0" stop-color="#ffffff" stop-opacity="0.6"/>
-                            <stop offset="1" stop-color="#000000" stop-opacity="0.5"/>
-                        </linearGradient>`;
+                let blurDefs = '';
+                if (useBlur && blurMax > 0) {
+                    for(let i=1; i<=Math.ceil(blurMax); i++) {
+                        blurDefs += `<filter id="blur-${i}"><feGaussianBlur stdDeviation="${i}"/></filter>\n`;
                     }
                 }
 
@@ -2566,7 +2561,6 @@
                 let botObjects = '';
 
                 if (isDither) {
-                    // Temporarily render just the clean vectors to grab dot data
                     ctx.fillStyle = `rgb(${bgR},${bgG},${bgB})`;
                     ctx.fillRect(0, 0, W, H);
                     ctx.save();
@@ -2596,8 +2590,7 @@
                     ditherMarkup = `<g id="dither-layer">${dotElements}</g>`;
                     window.svgDotsList = null;
 
-                    // Ensure canvas goes back to accurate state visually after export routine finishes
-                    requestAnimationFrame(() => updateGraphic(0.016));
+                    requestAnimationFrame(() => window.triggerGraphicUpdate());
                 } else {
                     topObjects = emitObjects(true, peakTop);
                     botObjects = emitObjects(false, H - peakBot);
@@ -2610,7 +2603,7 @@
     <linearGradient id="gBot" x1="0" y1="${H}" x2="0" y2="${Math.min(H - 1, H - peakBot)}" gradientUnits="userSpaceOnUse">${gradBotStops}</linearGradient>
     <clipPath id="clipTop"><path d="${clipTop}"/></clipPath>
     <clipPath id="clipBot"><path d="${clipBot}"/></clipPath>
-    ${p3dDefs}
+    ${blurDefs}
   </defs>
   <rect width="${W}" height="${H}" fill="rgb(${bgR},${bgG},${bgB})"/>
   ${isDither ? ditherMarkup : `
@@ -2632,18 +2625,23 @@
 
                 if (fmt === 'png') {
                     const expSize = parseInt(document.getElementById('exportPngSize').value);
-                    let [ratioW, ratioH] = formatSel.value.split(':').map(Number);
-                    if (orientationSel.value === 'vertical') [ratioW, ratioH] = [ratioH, ratioW];
+                    let [r1, r2] = formatSel.value.split(':').map(Number);
+                    let ratioW = Math.max(r1, r2);
+                    let ratioH = Math.min(r1, r2);
+                    if (orientationSel.value === 'vertical') {
+                        ratioW = Math.min(r1, r2);
+                        ratioH = Math.max(r1, r2);
+                    }
                     const aspect = ratioW / ratioH;
                     
-                    const eW = aspect >= 1 ? expSize : expSize * aspect;
-                    const eH = aspect >= 1 ? expSize / aspect : expSize;
+                    const eW = Math.round(aspect >= 1 ? expSize : expSize * aspect);
+                    const eH = Math.round(aspect >= 1 ? expSize / aspect : expSize);
                     
                     const tmpC = document.createElement('canvas');
                     tmpC.width = eW; 
                     tmpC.height = eH;
                     const tCtx = tmpC.getContext('2d');
-                    tCtx.imageSmoothingEnabled = false; // keep crisp pure scale
+                    tCtx.imageSmoothingEnabled = true; 
                     tCtx.drawImage(canvas, 0, 0, eW, eH);
                     
                     const link = document.createElement('a');
@@ -2674,14 +2672,18 @@
                     
                     window.isExportingWebm = true;
                     
-                    let [ratioW, ratioH] = formatSel.value.split(':').map(Number);
-                    if (orientationSel.value === 'vertical') [ratioW, ratioH] = [ratioH, ratioW];
+                    let [r1, r2] = formatSel.value.split(':').map(Number);
+                    let ratioW = Math.max(r1, r2);
+                    let ratioH = Math.min(r1, r2);
+                    if (orientationSel.value === 'vertical') {
+                        ratioW = Math.min(r1, r2);
+                        ratioH = Math.max(r1, r2);
+                    }
                     const aspect = ratioW / ratioH;
                     
                     const eW = Math.round(aspect >= 1 ? expSize : expSize * aspect);
                     const eH = Math.round(aspect >= 1 ? expSize / aspect : expSize);
                     
-                    // WebCodecs requires even dimensions
                     const vidW = eW % 2 === 0 ? eW : eW + 1;
                     const vidH = eH % 2 === 0 ? eH : eH + 1;
 
@@ -2689,20 +2691,37 @@
                     recCanvas.width = vidW;
                     recCanvas.height = vidH;
                     const recCtx = recCanvas.getContext('2d');
-                    recCtx.imageSmoothingEnabled = false; 
+                    recCtx.imageSmoothingEnabled = true; 
 
-                    updateGraphic(0);
+                    window.updateGraphic(0);
                     await new Promise(r => requestAnimationFrame(r));
                     
                     const totalFrames = duration * fps;
                     const dtFixed = 1 / fps;
 
+                    let useWebCodecs = false;
+                    let codecToUse = 'vp09.00.10.08';
                     if (typeof WebMMuxer !== 'undefined' && typeof VideoEncoder !== 'undefined') {
-                        // NATIVE DETERMINISTIC ENCODE
+                        try {
+                            let support = await VideoEncoder.isConfigSupported({
+                                codec: codecToUse,
+                                width: vidW,
+                                height: vidH,
+                                bitrate: 10e6
+                            });
+                            if (!support.supported) codecToUse = 'vp8';
+                            useWebCodecs = true;
+                        } catch(e) {
+                            useWebCodecs = true;
+                            codecToUse = 'vp8';
+                        }
+                    }
+
+                    if (useWebCodecs) {
                         const muxer = new WebMMuxer.Muxer({
                             target: new WebMMuxer.ArrayBufferTarget(),
                             video: {
-                                codec: 'V_VP9',
+                                codec: codecToUse === 'vp8' ? 'V_VP8' : 'V_VP9',
                                 width: vidW,
                                 height: vidH,
                                 frameRate: fps
@@ -2715,7 +2734,7 @@
                         });
 
                         videoEncoder.configure({
-                            codec: 'vp09.00.10.08',
+                            codec: codecToUse,
                             width: vidW,
                             height: vidH,
                             bitrate: 10e6,
@@ -2723,13 +2742,16 @@
 
                         document.getElementById('export-status-text').innerText = 'Rendering frames...';
 
+                        let speedDive = parseFloat(document.getElementById('animSpeedDive').value) / 50;
+                        let speedSlideX = parseFloat(document.getElementById('animSpeedSlideX').value) / 50;
+                        let speedRotate = parseFloat(document.getElementById('animSpeedRotate').value) / 50;
+
                         for (let i = 0; i < totalFrames; i++) {
-                            if (animState.dive) phaseDive += (animSpeed / 50) * 0.2 * dtFixed;
-                            if (animState.slideX) phaseSlide += (animSpeed / 50) * 0.2 * dtFixed;
-                            if (animState.slideY) phaseSlideY += (animSpeed / 50) * 0.2 * dtFixed;
-                            if (animState.rotate) phaseRotate += (animSpeed / 50) * 0.5 * dtFixed;
+                            if (animState.dive) phaseDive += speedDive * 0.2 * dtFixed;
+                            if (animState.slideX) phaseSlide += speedSlideX * 0.2 * dtFixed;
+                            if (animState.rotate) phaseRotate += speedRotate * 0.5 * dtFixed;
                             
-                            updateGraphic(dtFixed);
+                            window.updateGraphic(dtFixed);
                             recCtx.drawImage(canvas, 0, 0, vidW, vidH);
                             
                             const frame = new VideoFrame(recCanvas, { timestamp: i * 1e6 / fps });
@@ -2738,10 +2760,8 @@
                             
                             document.getElementById('export-progress-bar').style.width = `${(i / totalFrames) * 100}%`;
                             
-                            // Yield back to UI occasionally to show progress
                             if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
 
-                            // Prevent encoder queue overload
                             while (videoEncoder.encodeQueueSize > 5) {
                                 await new Promise(r => setTimeout(r, 5));
                             }
@@ -2758,7 +2778,7 @@
                         link.click();
                         
                         window.isExportingWebm = false;
-                        updateGraphic(0);
+                        window.updateGraphic(0);
                         animFrameReq = requestAnimationFrame(animLoop);
                         
                         document.getElementById('export-progress').style.display = 'none';
@@ -2766,7 +2786,6 @@
                         doExportBtn.style.pointerEvents = 'auto';
 
                     } else {
-                        // FALLBACK TO MEDIA RECORDER
                         document.getElementById('export-status-text').innerText = 'Rendering (Fallback Mode)...';
                         const stream = recCanvas.captureStream(fps);
                         let mime = 'video/webm; codecs=vp9';
@@ -2785,7 +2804,7 @@
                             link.click();
                             
                             window.isExportingWebm = false;
-                            updateGraphic(0);
+                            window.updateGraphic(0);
                             animFrameReq = requestAnimationFrame(animLoop);
                             
                             document.getElementById('export-progress').style.display = 'none';
@@ -2796,15 +2815,18 @@
                         const track = stream.getVideoTracks()[0];
                         recorder.start();
 
+                        let speedDive = parseFloat(document.getElementById('animSpeedDive').value) / 50;
+                        let speedSlideX = parseFloat(document.getElementById('animSpeedSlideX').value) / 50;
+                        let speedRotate = parseFloat(document.getElementById('animSpeedRotate').value) / 50;
+
                         for (let i = 0; i <= totalFrames; i++) {
                             const start = performance.now();
                             
-                            if (animState.dive) phaseDive += (animSpeed / 50) * 0.2 * dtFixed;
-                            if (animState.slideX) phaseSlide += (animSpeed / 50) * 0.2 * dtFixed;
-                            if (animState.slideY) phaseSlideY += (animSpeed / 50) * 0.2 * dtFixed;
-                            if (animState.rotate) phaseRotate += (animSpeed / 50) * 0.5 * dtFixed;
+                            if (animState.dive) phaseDive += speedDive * 0.2 * dtFixed;
+                            if (animState.slideX) phaseSlide += speedSlideX * 0.2 * dtFixed;
+                            if (animState.rotate) phaseRotate += speedRotate * 0.5 * dtFixed;
                             
-                            updateGraphic(dtFixed);
+                            window.updateGraphic(dtFixed);
                             recCtx.drawImage(canvas, 0, 0, vidW, vidH);
 
                             if (track && track.requestFrame) track.requestFrame();
@@ -2820,10 +2842,13 @@
                 }
             });
 
-            window.addEventListener('resize', () => updateGraphic(0.016));
+            window.addEventListener('resize', () => window.triggerGraphicUpdate(0.016));
 
-            initSpaceObjects();
-            updateGraphic(0.016);
+            initDefaultShapes();
+            refreshAllShapeCaches();
+            renderShapeUI();
+            window.initSpaceObjects();
+            animFrameReq = requestAnimationFrame(animLoop);
         }
 
         if (document.readyState === 'loading') {
