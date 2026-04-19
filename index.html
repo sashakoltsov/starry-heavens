@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Landscape Graphic Generator</title>
+    <!-- WebM Muxer library for deterministic offline video rendering -->
+    <script src="https://unpkg.com/webm-muxer/build/webm-muxer.js"></script>
     <style>
         :root {
             --bg-dark: #0a0a0a;
@@ -75,6 +77,16 @@
             background: var(--accent);
             border-color: var(--accent);
             color: #fff;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
         }
 
         .top-widget {
@@ -450,6 +462,20 @@
             pointer-events: auto;
         }
 
+        #pan-widget::before, #pan-widget::after {
+            content: '';
+            position: absolute;
+            background: #888;
+            border-radius: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 1; /* Under the sliders */
+        }
+        #pan-widget::before { width: 70px; height: 4px; }
+        #pan-widget::after { width: 4px; height: 70px; }
+
         .cross-slider {
             position: absolute;
             -webkit-appearance: none;
@@ -460,21 +486,11 @@
             left: 0;
             margin: 0;
             outline: none;
+            z-index: 2; /* Above the cross lines */
         }
 
-        .cross-slider::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            background: #888;
-            border-radius: 2px;
-        }
-
-        .cross-slider::-moz-range-track {
-            width: 100%;
-            height: 4px;
-            background: #888;
-            border-radius: 2px;
-        }
+        .cross-slider::-webkit-slider-runnable-track { width: 100%; height: 4px; background: transparent; }
+        .cross-slider::-moz-range-track { width: 100%; height: 4px; background: transparent; }
 
         .cross-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
@@ -497,9 +513,13 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
 
-        #panY {
-            transform: rotate(-90deg);
-        }
+        #panX::-webkit-slider-thumb { background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ctext x='10' y='14.5' font-family='sans-serif' font-size='12' font-weight='bold' fill='%23333' text-anchor='middle'%3EH%3C/text%3E%3C/svg%3E") center center no-repeat; }
+        #panX::-moz-range-thumb { background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ctext x='10' y='14.5' font-family='sans-serif' font-size='12' font-weight='bold' fill='%23333' text-anchor='middle'%3EH%3C/text%3E%3C/svg%3E") center center no-repeat; }
+
+        #panY { transform: rotate(-90deg); }
+        #panY::-webkit-slider-thumb { background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ctext x='10' y='14.5' font-family='sans-serif' font-size='12' font-weight='bold' fill='%23333' text-anchor='middle' transform='rotate(90 10 10)'%3EV%3C/text%3E%3C/svg%3E") center center no-repeat; }
+        #panY::-moz-range-thumb { background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ctext x='10' y='14.5' font-family='sans-serif' font-size='12' font-weight='bold' fill='%23333' text-anchor='middle' transform='rotate(90 10 10)'%3EV%3C/text%3E%3C/svg%3E") center center no-repeat; }
+
     </style>
 </head>
 <body>
@@ -537,8 +557,12 @@
                 <input type="range" id="renderDensity" class="slider ui-input" min="500" max="8000" step="100" value="2400" style="width: 100px;">
             </div>
 
-            <button class="tab-btn" id="saveBtn">Save JSON</button>
-            <button class="tab-btn" id="loadBtn">Load JSON</button>
+            <button class="tab-btn icon-btn" id="saveBtn" title="Save Settings (JSON)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </button>
+            <button class="tab-btn icon-btn" id="loadBtn" title="Load Settings (JSON)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            </button>
         </div>
 
         <input type="file" id="loadFile" style="display:none" accept=".json">
@@ -1006,7 +1030,8 @@
                         <label>Output Size (Shorter Side px) <span class="val-badge" id="val-exportWebmSize">1080</span></label>
                     </div>
                     <input type="range" id="exportWebmSize" class="slider" min="500" max="4000" step="100" value="1080">
-                    <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: -6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                        <span style="font-size: 10px; color: var(--text-muted);">Outputs video using current render density.</span>
                         <span style="font-size: 11px; font-weight: 700; color: var(--accent);" id="res-exportWebm">1080 × 2160 px</span>
                     </div>
                 </div>
@@ -1342,7 +1367,12 @@
                     document.getElementById('sc4').value
                 ];
 
+                const forceReflect = animState.slideY || reflectTog;
+
                 spaceObjects.forEach(obj => {
+                    // Skip native bottom-half objects entirely when rendering a forced reflection
+                    if (forceReflect && !obj.isTop) return;
+
                     let pX = panX * obj.pFactor;
                     let pY = panY * obj.pFactor;
                     let dY = diveShift * obj.pFactor * 0.003;
@@ -1353,24 +1383,20 @@
                         currentBaseX = ((currentBaseX + 1.0) % 3.0 + 3.0) % 3.0 - 1.0;
                     }
 
-                    // Enormous wrap buffer size of 3.0 to give objects total freedom to traverse 
-                    // completely behind horizons / entirely out of bounds before disappearing
+                    // Wrap buffer bounds precisely constrained to exactly match visual half-spaces modulo lengths
                     let baseY = obj.baseY;
                     if (animState.slideY) {
                         const shift = phaseSlideY * obj.pFactor * slideYDir;
                         if (obj.isTop) {
-                            baseY = ((obj.baseY + shift + 1.5) % 3.0 + 3.0) % 3.0 - 1.5;
+                            baseY = ((obj.baseY + shift + 1.5) % 2.0 + 2.0) % 2.0 - 1.5;
                         } else {
-                            baseY = ((obj.baseY + shift + 0.0) % 3.0 + 3.0) % 3.0 + 0.0;
+                            baseY = ((obj.baseY + shift - 0.5) % 2.0 + 2.0) % 2.0 + 0.5;
                         }
                     }
 
-                    const forceReflect = animState.slideY || reflectTog;
                     let passes = forceReflect ? [false, true] : [false];
 
                     passes.forEach(isReflection => {
-                        if(isReflection && !obj.isTop) return;
-
                         let normalizedY;
                         let scaleYSign = 1;
 
@@ -2191,12 +2217,12 @@
                         updateGraphic(0.016);
                     } catch(err) {
                         const loadBtn = document.getElementById('loadBtn');
-                        const origText = loadBtn.innerText;
-                        loadBtn.innerText = "Invalid JSON!";
+                        const origText = loadBtn.innerHTML;
+                        loadBtn.innerHTML = `<span style="font-size:10px; font-weight:bold;">ERR</span>`;
                         loadBtn.style.backgroundColor = "#ff4444";
                         loadBtn.style.color = "#fff";
                         setTimeout(() => {
-                            loadBtn.innerText = origText;
+                            loadBtn.innerHTML = origText;
                             loadBtn.style.backgroundColor = "";
                             loadBtn.style.color = "";
                         }, 2000);
@@ -2380,7 +2406,11 @@
 
                 function emitObjects(isTopHalf, peakY) {
                     const out = [];
+                    const forceReflect = animState.slideY || reflectTog;
+
                     spaceObjects.forEach(obj => {
+                        if (forceReflect && !obj.isTop) return;
+
                         const pX = panX * obj.pFactor;
                         const pY = panY * obj.pFactor;
                         const dY = dive * obj.pFactor * 0.003;
@@ -2395,13 +2425,12 @@
                         if (animState.slideY) {
                             const shift = phaseSlideY * obj.pFactor * slideYDir;
                             if (obj.isTop) {
-                                baseY = ((obj.baseY + shift + 1.5) % 3.0 + 3.0) % 3.0 - 1.5;
+                                baseY = ((obj.baseY + shift + 1.5) % 2.0 + 2.0) % 2.0 - 1.5;
                             } else {
-                                baseY = ((obj.baseY + shift + 0.0) % 3.0 + 3.0) % 3.0 + 0.0;
+                                baseY = ((obj.baseY + shift - 0.5) % 2.0 + 2.0) % 2.0 + 0.5;
                             }
                         }
 
-                        const forceReflect = animState.slideY || reflectTog;
                         const passes = forceReflect ? [false, true] : [false];
                         passes.forEach(isReflection => {
                             if (isReflection && !obj.isTop) return;
@@ -2643,33 +2672,91 @@
                     doExportBtn.style.pointerEvents = 'none';
                     document.getElementById('export-status-text').innerText = 'Preparing Context...';
                     
-                    // Halt live loop and modify canvas resolution for recording
                     window.isExportingWebm = true;
-                    const originalDensity = parseInt(document.getElementById('renderDensity').value);
-                    document.getElementById('renderDensity').value = expSize;
                     
+                    let [ratioW, ratioH] = formatSel.value.split(':').map(Number);
+                    if (orientationSel.value === 'vertical') [ratioW, ratioH] = [ratioH, ratioW];
+                    const aspect = ratioW / ratioH;
+                    
+                    const eW = Math.round(aspect >= 1 ? expSize : expSize * aspect);
+                    const eH = Math.round(aspect >= 1 ? expSize / aspect : expSize);
+                    
+                    // WebCodecs requires even dimensions
+                    const vidW = eW % 2 === 0 ? eW : eW + 1;
+                    const vidH = eH % 2 === 0 ? eH : eH + 1;
+
+                    const recCanvas = document.createElement('canvas');
+                    recCanvas.width = vidW;
+                    recCanvas.height = vidH;
+                    const recCtx = recCanvas.getContext('2d');
+                    recCtx.imageSmoothingEnabled = false; 
+
                     updateGraphic(0);
-                    // Let DOM layout and internal buffers stabilize
                     await new Promise(r => requestAnimationFrame(r));
                     
-                    const stream = canvas.captureStream(fps);
-                    let mime = 'video/webm; codecs=vp9';
-                    if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm';
-                    
-                    const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 16000000 });
-                    const chunks = [];
-                    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-                    
-                    recorder.onstop = () => {
-                        const blob = new Blob(chunks, { type: mime });
+                    const totalFrames = duration * fps;
+                    const dtFixed = 1 / fps;
+
+                    if (typeof WebMMuxer !== 'undefined' && typeof VideoEncoder !== 'undefined') {
+                        // NATIVE DETERMINISTIC ENCODE
+                        const muxer = new WebMMuxer.Muxer({
+                            target: new WebMMuxer.ArrayBufferTarget(),
+                            video: {
+                                codec: 'V_VP9',
+                                width: vidW,
+                                height: vidH,
+                                frameRate: fps
+                            }
+                        });
+
+                        const videoEncoder = new VideoEncoder({
+                            output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+                            error: e => console.error(e)
+                        });
+
+                        videoEncoder.configure({
+                            codec: 'vp09.00.10.08',
+                            width: vidW,
+                            height: vidH,
+                            bitrate: 10e6,
+                        });
+
+                        document.getElementById('export-status-text').innerText = 'Rendering frames...';
+
+                        for (let i = 0; i < totalFrames; i++) {
+                            if (animState.dive) phaseDive += (animSpeed / 50) * 0.2 * dtFixed;
+                            if (animState.slideX) phaseSlide += (animSpeed / 50) * 0.2 * dtFixed;
+                            if (animState.slideY) phaseSlideY += (animSpeed / 50) * 0.2 * dtFixed;
+                            if (animState.rotate) phaseRotate += (animSpeed / 50) * 0.5 * dtFixed;
+                            
+                            updateGraphic(dtFixed);
+                            recCtx.drawImage(canvas, 0, 0, vidW, vidH);
+                            
+                            const frame = new VideoFrame(recCanvas, { timestamp: i * 1e6 / fps });
+                            videoEncoder.encode(frame, { keyFrame: i % 30 === 0 });
+                            frame.close();
+                            
+                            document.getElementById('export-progress-bar').style.width = `${(i / totalFrames) * 100}%`;
+                            
+                            // Yield back to UI occasionally to show progress
+                            if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+
+                            // Prevent encoder queue overload
+                            while (videoEncoder.encodeQueueSize > 5) {
+                                await new Promise(r => setTimeout(r, 5));
+                            }
+                        }
+
+                        await videoEncoder.flush();
+                        muxer.finalize();
+                        
+                        const blob = new Blob([muxer.target.buffer], { type: 'video/webm' });
                         const url = URL.createObjectURL(blob);
                         const link = document.createElement('a');
                         link.download = `landscape-${tag}.webm`;
                         link.href = url;
                         link.click();
                         
-                        // Restore Live state
-                        document.getElementById('renderDensity').value = originalDensity;
                         window.isExportingWebm = false;
                         updateGraphic(0);
                         animFrameReq = requestAnimationFrame(animLoop);
@@ -2677,34 +2764,59 @@
                         document.getElementById('export-progress').style.display = 'none';
                         doExportBtn.style.opacity = '1';
                         doExportBtn.style.pointerEvents = 'auto';
-                    };
-                    
-                    const totalFrames = duration * fps;
-                    const dtFixed = 1 / fps;
-                    const track = stream.getVideoTracks()[0];
-                    
-                    recorder.start();
-                    document.getElementById('export-status-text').innerText = 'Rendering frames...';
 
-                    for (let i = 0; i <= totalFrames; i++) {
-                        const start = performance.now();
+                    } else {
+                        // FALLBACK TO MEDIA RECORDER
+                        document.getElementById('export-status-text').innerText = 'Rendering (Fallback Mode)...';
+                        const stream = recCanvas.captureStream(fps);
+                        let mime = 'video/webm; codecs=vp9';
+                        if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm';
                         
-                        if (animState.dive) phaseDive += (animSpeed / 50) * 0.2 * dtFixed;
-                        if (animState.slideX) phaseSlide += (animSpeed / 50) * 0.2 * dtFixed;
-                        if (animState.slideY) phaseSlideY += (animSpeed / 50) * 0.2 * dtFixed;
-                        if (animState.rotate) phaseRotate += (animSpeed / 50) * 0.5 * dtFixed;
+                        const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 16000000 });
+                        const chunks = [];
+                        recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
                         
-                        updateGraphic(dtFixed);
-                        if (track && track.requestFrame) track.requestFrame();
+                        recorder.onstop = () => {
+                            const blob = new Blob(chunks, { type: mime });
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.download = `landscape-${tag}.webm`;
+                            link.href = url;
+                            link.click();
+                            
+                            window.isExportingWebm = false;
+                            updateGraphic(0);
+                            animFrameReq = requestAnimationFrame(animLoop);
+                            
+                            document.getElementById('export-progress').style.display = 'none';
+                            doExportBtn.style.opacity = '1';
+                            doExportBtn.style.pointerEvents = 'auto';
+                        };
                         
-                        const elapsed = performance.now() - start;
-                        // Delay to match real-time duration required by MediaRecorder for synced playback speeds
-                        const delay = Math.max(0, (1000 / fps) - elapsed);
-                        
-                        document.getElementById('export-progress-bar').style.width = `${(i / totalFrames) * 100}%`;
-                        await new Promise(r => setTimeout(r, delay));
+                        const track = stream.getVideoTracks()[0];
+                        recorder.start();
+
+                        for (let i = 0; i <= totalFrames; i++) {
+                            const start = performance.now();
+                            
+                            if (animState.dive) phaseDive += (animSpeed / 50) * 0.2 * dtFixed;
+                            if (animState.slideX) phaseSlide += (animSpeed / 50) * 0.2 * dtFixed;
+                            if (animState.slideY) phaseSlideY += (animSpeed / 50) * 0.2 * dtFixed;
+                            if (animState.rotate) phaseRotate += (animSpeed / 50) * 0.5 * dtFixed;
+                            
+                            updateGraphic(dtFixed);
+                            recCtx.drawImage(canvas, 0, 0, vidW, vidH);
+
+                            if (track && track.requestFrame) track.requestFrame();
+                            
+                            const elapsed = performance.now() - start;
+                            const delay = Math.max(0, (1000 / fps) - elapsed);
+                            
+                            document.getElementById('export-progress-bar').style.width = `${(i / totalFrames) * 100}%`;
+                            await new Promise(r => setTimeout(r, delay));
+                        }
+                        recorder.stop();
                     }
-                    recorder.stop();
                 }
             });
 
