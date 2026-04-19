@@ -97,17 +97,11 @@
             margin: 0;
         }
 
-        .fps-bars {
-            display: flex;
-            align-items: flex-end;
-            gap: 2px;
-            height: 14px;
-        }
-
-        .fps-bar {
-            width: 4px;
-            border-radius: 1px;
-            transition: opacity 0.2s;
+        .fps-circle {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
         }
 
         .tab-panel {
@@ -435,6 +429,72 @@
         canvas {
             display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none;
         }
+
+        /* --- New Bottom-Right Pan Widget --- */
+        #pan-widget {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 80px;
+            height: 80px;
+            z-index: 150;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #333;
+            border-radius: 50%;
+            backdrop-filter: blur(4px);
+            pointer-events: auto;
+        }
+
+        .cross-slider {
+            position: absolute;
+            -webkit-appearance: none;
+            background: transparent;
+            width: 80px;
+            height: 20px;
+            top: 30px;
+            left: 0;
+            margin: 0;
+            outline: none;
+        }
+
+        .cross-slider::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: #888;
+            border-radius: 2px;
+        }
+
+        .cross-slider::-moz-range-track {
+            width: 100%;
+            height: 4px;
+            background: #888;
+            border-radius: 2px;
+        }
+
+        .cross-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        .cross-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        #panY {
+            transform: rotate(-90deg);
+        }
     </style>
 </head>
 <body>
@@ -443,6 +503,12 @@
         <div id="touchpoint">
             <canvas id="canvas"></canvas>
         </div>
+    </div>
+
+    <!-- Bottom-Right Pan Control Widget -->
+    <div id="pan-widget" title="Pan X/Y">
+        <input type="range" class="cross-slider ui-input" id="panX" min="-50" max="50" value="0">
+        <input type="range" class="cross-slider ui-input" id="panY" min="-50" max="50" value="0">
     </div>
 
     <div id="ui-container">
@@ -455,11 +521,7 @@
             
             <!-- FPS Monitor Widget -->
             <div class="top-widget">
-                <div class="fps-bars">
-                    <div id="fps-bar-1" class="fps-bar" style="background:#ff4444; height:6px;"></div>
-                    <div id="fps-bar-2" class="fps-bar" style="background:#ffbb33; height:10px;"></div>
-                    <div id="fps-bar-3" class="fps-bar" style="background:#00C851; height:14px;"></div>
-                </div>
+                <div id="fps-circle" class="fps-circle" style="background:#00C851;"></div>
                 <span id="fps-text" style="font-size:11px; font-weight:800; width:45px; text-align:right;">60 FPS</span>
             </div>
 
@@ -530,20 +592,6 @@
                             <label>Dive In/Out <span class="val-badge" id="val-dive">100</span></label>
                         </div>
                         <input type="range" class="slider ui-input" id="dive" min="0" max="100" value="100">
-                    </div>
-                    <div class="control-group">
-                        <div class="label-row">
-                            <label>Pan Left/Right <span class="val-badge" id="val-panX">0</span></label>
-                            <button class="reset-btn" onclick="resetSlider('panX')">Reset</button>
-                        </div>
-                        <input type="range" class="slider ui-input" id="panX" min="-50" max="50" value="0">
-                    </div>
-                    <div class="control-group">
-                        <div class="label-row">
-                            <label>Pan Up/Down <span class="val-badge" id="val-panY">0</span></label>
-                            <button class="reset-btn" onclick="resetSlider('panY')">Reset</button>
-                        </div>
-                        <input type="range" class="slider ui-input" id="panY" min="-50" max="50" value="0">
                     </div>
                     <div class="control-group" style="padding-top: 12px; margin-top: 4px; border-top: 1px solid #333;">
                         <div class="label-row">
@@ -1788,8 +1836,6 @@
                 document.getElementById('val-warpPull').innerText = document.getElementById('warpPull').value;
                 document.getElementById('val-cornerPull').innerText = document.getElementById('cornerPull').value;
                 document.getElementById('val-dive').innerText = diveRange.value;
-                document.getElementById('val-panX').innerText = panXRange.value;
-                document.getElementById('val-panY').innerText = panYRange.value;
                 document.getElementById('val-effectDensity').innerText = effectDensityRange.value;
                 document.getElementById('val-gridSize').innerText = gridSizeRange.value;
                 document.getElementById('val-dotScale').innerText = dotScaleRange.value;
@@ -1881,15 +1927,13 @@
 
             function updateFpsUI(fps) {
                 document.getElementById('fps-text').innerText = `${fps} FPS`;
-                const b1 = document.getElementById('fps-bar-1');
-                const b2 = document.getElementById('fps-bar-2');
-                const b3 = document.getElementById('fps-bar-3');
-                if (fps >= 45) {
-                    b1.style.opacity = 1; b2.style.opacity = 1; b3.style.opacity = 1;
-                } else if (fps >= 24) {
-                    b1.style.opacity = 1; b2.style.opacity = 1; b3.style.opacity = 0.2;
+                const circle = document.getElementById('fps-circle');
+                if (fps >= 40) {
+                    circle.style.backgroundColor = '#00C851';
+                } else if (fps >= 20) {
+                    circle.style.backgroundColor = '#ffbb33';
                 } else {
-                    b1.style.opacity = 1; b2.style.opacity = 0.2; b3.style.opacity = 0.2;
+                    circle.style.backgroundColor = '#ff4444';
                 }
             }
 
