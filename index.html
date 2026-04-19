@@ -131,21 +131,41 @@
             transition: background-color 0.2s;
         }
 
+        /* --- SIDE DRAWER --- */
+        #side-drawer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 360px;
+            background: var(--bg-panel);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid #333;
+            z-index: 90;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            padding-top: 88px; /* space for top floating buttons */
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+            pointer-events: auto;
+        }
+
+        body.panel-open #side-drawer {
+            transform: translateX(0);
+        }
+
+        #side-drawer::-webkit-scrollbar { width: 6px; }
+        #side-drawer::-webkit-scrollbar-track { background: transparent; }
+        #side-drawer::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+        #side-drawer::-webkit-scrollbar-thumb:hover { background: #777; }
+
         .tab-panel {
             display: none;
-            background: var(--bg-panel);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid #444;
-            border-radius: 16px;
-            width: 360px;
-            flex-shrink: 1;
-            overflow-y: auto;
-            padding: 20px;
+            width: 100%;
+            flex-shrink: 0;
+            padding: 0 24px 24px 24px;
             box-sizing: border-box;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            pointer-events: auto;
-            max-height: calc(100vh - 100px);
         }
 
         .tab-panel.active {
@@ -153,11 +173,6 @@
             flex-direction: column;
             gap: 16px;
         }
-
-        .tab-panel::-webkit-scrollbar { width: 6px; }
-        .tab-panel::-webkit-scrollbar-track { background: transparent; }
-        .tab-panel::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
-        .tab-panel::-webkit-scrollbar-thumb:hover { background: #777; }
 
         details {
             background: var(--bg-group);
@@ -411,6 +426,7 @@
         .anim-label:hover { color: #fff; }
         .anim-label input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; width: 14px; height: 14px; margin: 0; }
 
+        /* PREVIEW AREA */
         #preview-area {
             flex: 1;
             display: flex;
@@ -423,10 +439,17 @@
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
             z-index: 1;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Dynamically shift canvas rightwards if a panel is open to avoid overlap */
+        body.panel-open #preview-area {
+            left: 360px; /* Slides exactly flush with the sidebar width */
         }
 
         #touchpoint {
-            transition: width 0.2s, height 0.2s;
+            flex-shrink: 0; /* CRITICAL: Allows canvas to physically scale past limits without squeezing */
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -440,7 +463,7 @@
             border-radius: 10px;
         }
 
-        /* --- Bottom-Right Pan Widget --- */
+        /* --- Bottom-Right Pan Control Widget --- */
         #pan-widget-container {
             position: absolute;
             bottom: 30px;
@@ -544,6 +567,55 @@
         }
         #resetPanBtn:hover { background: #666; }
 
+        /* --- Visual Scale Widget --- */
+        #scale-widget-container {
+            position: absolute;
+            bottom: 50px;
+            right: 130px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #333;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+            z-index: 150;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        #scale-widget-container button {
+            background: transparent;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        #scale-widget-container button:hover {
+            opacity: 1;
+        }
+
+        #scale-widget-container input[type="range"] {
+            width: 80px;
+        }
+
+        #zoom-val-text {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            width: 36px;
+            text-align: right;
+            font-family: monospace;
+        }
+
     </style>
 </head>
 <body>
@@ -556,10 +628,11 @@
     <div id="preview-area">
         <div id="touchpoint">
             <canvas id="canvas"></canvas>
-            <svg style="position: absolute; bottom: 24px; left: 24px; pointer-events: none; z-index: 10;" width="120" height="35.2" viewBox="0 0 150 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18.2875 37.1109H24.7765V0H15.3379C5.84555 0 0.858062 4.85912 0.858062 12.0143C0.858062 17.7278 3.59314 21.0918 8.47336 24.5626L0 37.1109H7.02539L16.4641 23.0675L13.1927 20.8782C9.22417 18.2084 7.29353 16.1259 7.29353 11.6405C7.29353 7.68916 10.0822 5.01932 15.3915 5.01932H18.2875V37.1109ZM103.504 35.2954V30.1159C101.519 31.4508 98.1945 32.6255 95.084 32.6255C90.4183 32.6255 88.6485 30.4363 88.3804 25.9509H103.772V22.5869C103.772 13.2424 99.6425 9.71825 93.2606 9.71825C85.4844 9.71825 81.7841 15.6453 81.7841 23.7616C81.7841 33.1061 86.3961 37.6449 94.5477 37.6449C98.6235 37.6449 101.627 36.5769 103.504 35.2954ZM143.404 37.6449C146.353 37.6449 148.445 37.1109 150 35.9895V30.81C148.391 31.9314 146.461 32.6255 143.779 32.6255C139.221 32.6255 137.344 29.1013 137.344 23.5481C137.344 17.7278 139.65 14.7376 143.833 14.7376C146.3 14.7376 148.713 15.5919 150 16.3929V10.9998C148.659 10.2522 146.3 9.71825 143.136 9.71825C134.984 9.71825 130.747 15.5385 130.747 23.7082C130.747 32.6789 134.877 37.6449 143.404 37.6449ZM45.0483 10.2522V20.8782H36.5213V10.2522H30.1394V37.1109H36.5213V25.8975H45.0483V37.1109H51.4301V10.2522H45.0483ZM80.2288 32.0916H77.3865V10.2522H58.7773V12.5483C58.7773 19.1161 58.3482 27.6062 56.0958 32.0916H54.1116V43.2515H60.0107V37.1109H74.3296V43.2515H80.2288V32.0916ZM123.883 37.1109H131.123L120.88 22.6403L129.889 10.2522H123.454L114.444 22.6403V10.2522H108.062V37.1109H114.444V23.9218L123.883 37.1109ZM93.1534 14.7376C96.3175 14.7376 97.2828 17.354 97.2828 20.718V21.252H88.3804C88.5413 16.9802 90.0965 14.7376 93.1534 14.7376ZM71.0046 32.0916H61.995C63.7647 28.0334 64.2474 20.718 64.2474 16.0725V15.2715H71.0046V32.0916Z" fill="#4000CE"/>
-            </svg>
         </div>
+        <!-- Logo detached from canvas and fixed to bottom left of the sliding viewport -->
+        <svg id="logo" style="position: absolute; bottom: 24px; left: 24px; pointer-events: none; z-index: 10;" width="120" height="35.2" viewBox="0 0 150 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18.2875 37.1109H24.7765V0H15.3379C5.84555 0 0.858062 4.85912 0.858062 12.0143C0.858062 17.7278 3.59314 21.0918 8.47336 24.5626L0 37.1109H7.02539L16.4641 23.0675L13.1927 20.8782C9.22417 18.2084 7.29353 16.1259 7.29353 11.6405C7.29353 7.68916 10.0822 5.01932 15.3915 5.01932H18.2875V37.1109ZM103.504 35.2954V30.1159C101.519 31.4508 98.1945 32.6255 95.084 32.6255C90.4183 32.6255 88.6485 30.4363 88.3804 25.9509H103.772V22.5869C103.772 13.2424 99.6425 9.71825 93.2606 9.71825C85.4844 9.71825 81.7841 15.6453 81.7841 23.7616C81.7841 33.1061 86.3961 37.6449 94.5477 37.6449C98.6235 37.6449 101.627 36.5769 103.504 35.2954ZM143.404 37.6449C146.353 37.6449 148.445 37.1109 150 35.9895V30.81C148.391 31.9314 146.461 32.6255 143.779 32.6255C139.221 32.6255 137.344 29.1013 137.344 23.5481C137.344 17.7278 139.65 14.7376 143.833 14.7376C146.3 14.7376 148.713 15.5919 150 16.3929V10.9998C148.659 10.2522 146.3 9.71825 143.136 9.71825C134.984 9.71825 130.747 15.5385 130.747 23.7082C130.747 32.6789 134.877 37.6449 143.404 37.6449ZM45.0483 10.2522V20.8782H36.5213V10.2522H30.1394V37.1109H36.5213V25.8975H45.0483V37.1109H51.4301V10.2522H45.0483ZM80.2288 32.0916H77.3865V10.2522H58.7773V12.5483C58.7773 19.1161 58.3482 27.6062 56.0958 32.0916H54.1116V43.2515H60.0107V37.1109H74.3296V43.2515H80.2288V32.0916ZM123.883 37.1109H131.123L120.88 22.6403L129.889 10.2522H123.454L114.444 22.6403V10.2522H108.062V37.1109H114.444V23.9218L123.883 37.1109ZM93.1534 14.7376C96.3175 14.7376 97.2828 17.354 97.2828 20.718V21.252H88.3804C88.5413 16.9802 90.0965 14.7376 93.1534 14.7376ZM71.0046 32.0916H61.995C63.7647 28.0334 64.2474 20.718 64.2474 16.0725V15.2715H71.0046V32.0916Z" fill="#4000CE"/>
+        </svg>
     </div>
 
     <!-- Bottom-Right Pan Control Widget -->
@@ -574,6 +647,19 @@
         </button>
     </div>
 
+    <!-- Visual Scale Control Widget -->
+    <div id="scale-widget-container">
+        <button id="zoom-out-btn" title="Zoom Out">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+        <input type="range" class="slider ui-input" id="visualZoom" min="10" max="300" value="100">
+        <button id="zoom-in-btn" title="Zoom In">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+        <span id="zoom-val-text">100%</span>
+    </div>
+
+    <!-- Floating UI Navigation -->
     <div id="ui-container">
         <div class="tab-buttons">
             <button id="tab-btn-create" class="tab-btn" onclick="toggleTab('create')">Create</button>
@@ -604,7 +690,10 @@
         </div>
 
         <input type="file" id="loadFile" style="display:none" accept=".json">
+    </div>
 
+    <!-- Flush sliding drawer container for panels -->
+    <div id="side-drawer">
         <!-- CREATE PANEL -->
         <div id="panel-create" class="tab-panel">
             <details>
@@ -1040,12 +1129,11 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <script>
         const defaultSettings = {
-          "panX": "0", "panY": "0", "renderDensity": "2400", "format": "16:9",
+          "panX": "0", "panY": "0", "visualZoom": "100", "renderDensity": "2400", "format": "16:9",
           "orientation": "horizontal", "hCurve": "55", "edgePinch": "55", "dive": "100",
           "mousePanTog": false, "bgColor": "#000000", "c1": "#000000", "m1": "50",
           "c2": "#1f0c04", "m2": "50", "c3": "#320b2b", "totalCount": "203", "noise": "24",
@@ -1369,6 +1457,9 @@
                     else badge.innerText = document.getElementById(targetId).value;
                 }
             });
+            if (document.getElementById('zoom-val-text')) {
+                document.getElementById('zoom-val-text').innerText = document.getElementById('visualZoom').value + '%';
+            }
 
             // Generate Dither SVG Filters
             let ditherDefs = '';
@@ -1445,6 +1536,29 @@
                     }, 2000);
                 }
             });
+            
+            // Visual Zoom Widget Setup
+            const visualZoomSlider = document.getElementById('visualZoom');
+            const zoomOutBtn = document.getElementById('zoom-out-btn');
+            const zoomInBtn = document.getElementById('zoom-in-btn');
+            const zoomValText = document.getElementById('zoom-val-text');
+
+            function updateZoomUI() {
+                zoomValText.innerText = visualZoomSlider.value + '%';
+                if(typeof window.triggerGraphicUpdate === 'function') window.triggerGraphicUpdate();
+            }
+
+            visualZoomSlider.addEventListener('input', updateZoomUI);
+
+            zoomOutBtn.addEventListener('click', () => {
+                visualZoomSlider.value = Math.max(10, parseInt(visualZoomSlider.value) - 10);
+                updateZoomUI();
+            });
+
+            zoomInBtn.addEventListener('click', () => {
+                visualZoomSlider.value = Math.min(300, parseInt(visualZoomSlider.value) + 10);
+                updateZoomUI();
+            });
         });
 
         const tabs = ['create', 'animate', 'finalise', 'export'];
@@ -1464,7 +1578,13 @@
                 btn.classList.add('active');
                 const activePanel = document.getElementById(`panel-${tabId}`);
                 if (activePanel) activePanel.classList.add('active');
+                document.body.classList.add('panel-open');
+            } else {
+                document.body.classList.remove('panel-open');
             }
+
+            // Immediately recalculate bounds when toggling panels
+            if(typeof window.triggerGraphicUpdate === 'function') window.triggerGraphicUpdate();
         }
         window.toggleTab = toggleTab;
 
@@ -1998,12 +2118,20 @@
                     dstImageData = null; 
                 }
 
-                const paRect = previewArea.getBoundingClientRect();
-                const maxCssW = paRect.width - 50;
-                const maxCssH = paRect.height - 50;
+                // Compute exact available pixels directly using the viewport minus the sidebar
+                const isPanelOpen = document.body.classList.contains('panel-open');
+                const availableW = window.innerWidth - (isPanelOpen ? 360 : 0);
+                
+                // Allow a generous 48px padding (24 left + 24 right)
+                const maxCssW = availableW - 48;
+                const maxCssH = window.innerHeight - 48;
 
                 let cssW = maxCssW, cssH = maxCssW / aspect;
                 if (cssH > maxCssH) { cssH = maxCssH; cssW = maxCssH * aspect; }
+
+                let visualScale = document.getElementById('visualZoom') ? parseFloat(document.getElementById('visualZoom').value) / 100 : 1;
+                cssW *= visualScale;
+                cssH *= visualScale;
 
                 touchpoint.style.width = `${cssW}px`;
                 touchpoint.style.height = `${cssH}px`;
@@ -2265,6 +2393,9 @@
                                 else badge.innerText = document.getElementById(targetId).value;
                             }
                         });
+                        if (document.getElementById('zoom-val-text')) {
+                            document.getElementById('zoom-val-text').innerText = (settings.visualZoom || "100") + '%';
+                        }
 
                         toggleAnimOpts('slideX', document.getElementById('animSlideXTog').checked);
                         toggleAnimOpts('dive', document.getElementById('animDiveTog').checked);
