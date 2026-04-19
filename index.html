@@ -548,6 +548,11 @@
 </head>
 <body>
 
+    <!-- Hidden SVG Defs for Canvas Filters -->
+    <svg style="position:absolute; width:0; height:0;" aria-hidden="true">
+        <defs id="global-dither-defs"></defs>
+    </svg>
+
     <div id="preview-area">
         <div id="touchpoint">
             <canvas id="canvas"></canvas>
@@ -732,7 +737,20 @@
                         <!-- Dynamic Shape Elements Go Here -->
                     </div>
                     
-                    <button class="tab-btn" id="addShapeBtn" style="justify-content: center; border-style: dashed;">+ Add Custom Shape (SVG)</button>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <button class="tab-btn" id="addShapeBtn" style="justify-content: center; border-style: dashed; padding: 12px 6px;">+ Upload SVG</button>
+                        <button class="tab-btn" id="pasteSvgBtn" style="justify-content: center; border-style: dashed; padding: 12px 6px;">+ Paste SVG</button>
+                    </div>
+                    
+                    <!-- Paste Widget Overlay -->
+                    <div id="pasteSvgContainer" style="display:none; flex-direction:column; gap:10px; margin-top:10px; background:#1a1a1a; padding:12px; border-radius:6px; border:1px solid #333;">
+                        <textarea id="pasteSvgInput" rows="4" style="background:#0a0a0a; color:#fff; border:1px solid #555; border-radius:4px; padding:8px; font-family:monospace; font-size:10px; resize:vertical; outline:none;" placeholder="<svg>...</svg>"></textarea>
+                        <div style="display:flex; justify-content:flex-end; gap:8px;">
+                            <button class="tab-btn" id="cancelPasteBtn" style="height:30px; font-size:9px; padding:0 12px;">Cancel</button>
+                            <button class="tab-btn active" id="confirmPasteBtn" style="height:30px; font-size:9px; padding:0 12px;">Add Shape</button>
+                        </div>
+                    </div>
+
                     <input type="file" id="addShapeFile" accept=".svg" style="display:none;">
                 </div>
             </details>
@@ -859,15 +877,11 @@
                     <input type="range" id="fadeDuration" class="slider ui-input" min="1" max="100" value="20">
 
                     <div class="label-row" style="margin-top:4px;">
-                        <label>Blur Out Transition</label>
+                        <label>Dither Dissolve</label>
                         <label class="toggle-switch">
-                            <input type="checkbox" id="diveBlurTog" class="ui-input">
+                            <input type="checkbox" id="diveDitherTog" class="ui-input">
                             <span class="slider-tog"></span>
                         </label>
-                    </div>
-                    <div id="opts-blur" style="display:none; flex-direction:column; gap:10px;">
-                        <div class="label-row"><label>Max Blur px <span class="val-badge" id="val-diveBlurMax">10</span></label></div>
-                        <input type="range" id="diveBlurMax" class="slider ui-input" min="1" max="50" value="10">
                     </div>
                 </div>
             </div>
@@ -1046,7 +1060,7 @@
           "trailTog": true, "trailLength": "83", "exportFormatTab": "png",
           "exportPngSize": "2400", "exportSvgType": "clean", "exportWebmSize": "1100",
           "exportWebmDuration": "5", "exportWebmFps": "60", "fadeDuration": "20",
-          "diveBlurTog": false, "diveBlurMax": "10",
+          "diveDitherTog": false,
           "globalFillTog": false, "globalFillColor": "#0000ff",
           "globalStrokeTog": false, "globalStrokeColor": "#ffffff", "globalStrokeWeight": "2"
         };
@@ -1118,6 +1132,19 @@
             const finalStrokeTog = shape.strokeTog || useGlobalStroke;
             const finalStroke = shape.strokeTog ? shape.strokeColor : globalStroke;
             const finalStrokeW = shape.strokeTog ? shape.strokeWeight : globalStrokeW;
+
+            if (finalStrokeTog) {
+                const currentVb = svgEl.getAttribute('viewBox') || shape.viewBox;
+                if (currentVb) {
+                    const [vx, vy, vw, vh] = currentVb.split(/[\s,]+/).map(Number);
+                    const pad = parseInt(finalStrokeW) + 2; 
+                    shape.exportViewBox = `${vx - pad} ${vy - pad} ${vw + pad * 2} ${vh + pad * 2}`;
+                    svgEl.setAttribute('viewBox', shape.exportViewBox);
+                }
+                svgEl.setAttribute('overflow', 'visible');
+            } else {
+                shape.exportViewBox = shape.viewBox;
+            }
 
             const geomTags = ['path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon'];
             geomTags.forEach(tag => {
@@ -1219,6 +1246,32 @@
                 container.appendChild(box);
             });
             document.getElementById('addShapeBtn').disabled = shapes.length >= 10;
+            document.getElementById('pasteSvgBtn').disabled = shapes.length >= 10;
+        }
+
+        function addNewShape(svgString) {
+            const newShape = {
+                id: 'shape_' + Date.now(),
+                originalSvg: svgString,
+                custom: true,
+                hasCustomFill: false,
+                customFill: '#ffffff',
+                strokeTog: false,
+                strokeColor: '#ffffff',
+                strokeWeight: 2,
+                relativeSize: 100,
+                weight: 20,
+                ready: false,
+                viewBox: parseSvgViewBox(svgString)
+            };
+            shapes.push(newShape);
+            updateShapeCache(newShape, () => {
+                renderShapeUI();
+                if (typeof window.initSpaceObjects === 'function') {
+                    window.initSpaceObjects();
+                    window.triggerGraphicUpdate();
+                }
+            });
         }
 
         document.getElementById('shapes-list').addEventListener('input', (e) => {
@@ -1317,12 +1370,27 @@
                 }
             });
 
+            // Generate Dither SVG Filters
+            let ditherDefs = '';
+            for(let i=0; i<=20; i++) {
+                let A = i / 20;
+                let intercept = -255 * (1 - A);
+                ditherDefs += `
+                <filter id="dither-dissolve-${i}" x="-20%" y="-20%" width="140%" height="140%">
+                    <feTurbulence type="fractalNoise" baseFrequency="1.0" numOctaves="1" result="noise"/>
+                    <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0" in="noise" result="noiseAlpha"/>
+                    <feComponentTransfer in="noiseAlpha" result="noiseThreshold">
+                        <feFuncA type="linear" slope="255" intercept="${intercept}"/>
+                    </feComponentTransfer>
+                    <feComposite operator="in" in="SourceGraphic" in2="noiseThreshold"/>
+                </filter>\n`;
+            }
+            document.getElementById('global-dither-defs').innerHTML = ditherDefs;
+
             toggleAnimOpts('slideX', document.getElementById('animSlideXTog').checked);
             toggleAnimOpts('dive', document.getElementById('animDiveTog').checked);
             toggleAnimOpts('rotate', document.getElementById('animRotateTog').checked);
-            document.getElementById('opts-blur').style.display = document.getElementById('diveBlurTog').checked ? 'flex' : 'none';
 
-            // Global overrides events
             ['globalFillTog', 'globalFillColor', 'globalStrokeTog', 'globalStrokeColor', 'globalStrokeWeight'].forEach(id => {
                 document.getElementById(id).addEventListener('change', refreshAllShapeCaches);
                 if(id.includes('Color') || id.includes('Weight')) {
@@ -1340,31 +1408,42 @@
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     const processedSvg = ensureViewBox(ev.target.result);
-                    const newShape = {
-                        id: 'shape_' + Date.now(),
-                        originalSvg: processedSvg,
-                        custom: true,
-                        hasCustomFill: false,
-                        customFill: '#ffffff',
-                        strokeTog: false,
-                        strokeColor: '#ffffff',
-                        strokeWeight: 2,
-                        relativeSize: 100,
-                        weight: 20,
-                        ready: false,
-                        viewBox: parseSvgViewBox(processedSvg)
-                    };
-                    shapes.push(newShape);
-                    updateShapeCache(newShape, () => {
-                        renderShapeUI();
-                        if (typeof window.initSpaceObjects === 'function') {
-                            window.initSpaceObjects();
-                            window.triggerGraphicUpdate();
-                        }
-                    });
+                    addNewShape(processedSvg);
                 };
                 reader.readAsText(file);
                 e.target.value = '';
+            });
+
+            // Paste Widget Setup
+            const pasteBtn = document.getElementById('pasteSvgBtn');
+            const pasteContainer = document.getElementById('pasteSvgContainer');
+            const pasteInput = document.getElementById('pasteSvgInput');
+            
+            pasteBtn.addEventListener('click', () => {
+                pasteContainer.style.display = pasteContainer.style.display === 'none' ? 'flex' : 'none';
+            });
+            
+            document.getElementById('cancelPasteBtn').addEventListener('click', () => {
+                pasteContainer.style.display = 'none';
+                pasteInput.value = '';
+            });
+            
+            document.getElementById('confirmPasteBtn').addEventListener('click', () => {
+                const val = pasteInput.value.trim();
+                if (val.toLowerCase().includes('<svg')) {
+                    const processedSvg = ensureViewBox(val);
+                    addNewShape(processedSvg);
+                    pasteContainer.style.display = 'none';
+                    pasteInput.value = '';
+                } else {
+                    pasteInput.value = '';
+                    pasteInput.placeholder = "Invalid SVG! Paste code starting with <svg>...";
+                    pasteInput.style.borderColor = "#ff4444";
+                    setTimeout(() => {
+                        pasteInput.style.borderColor = "#555";
+                        pasteInput.placeholder = "<svg>...</svg>";
+                    }, 2000);
+                }
             });
         });
 
@@ -1587,8 +1666,7 @@
                 const reflectTog = document.getElementById('reflectTog').checked;
                 const sFarVal = parseFloat(document.getElementById('sFar').value);
                 const fadeDist = parseFloat(document.getElementById('fadeDuration').value) / 100;
-                const useBlur = document.getElementById('diveBlurTog').checked;
-                const blurMax = parseFloat(document.getElementById('diveBlurMax').value);
+                const useDitherFade = document.getElementById('diveDitherTog').checked;
 
                 const wrapX = 6.0;
 
@@ -1628,7 +1706,7 @@
 
                     let diveScaleMultiplier = 1;
                     let diveAlphaMultiplier = 1;
-                    let blurAmt = 0;
+                    let ditherFilterStr = '';
 
                     if (animState.dive) {
                         let currentZ = (obj.z - phaseDive) % 1.0;
@@ -1643,9 +1721,9 @@
                         let fadeOut = Math.min(1, (1 - t) / fadeDist);
                         diveAlphaMultiplier = Math.min(fadeIn, fadeOut);
 
-                        if (useBlur && (1 - t < fadeDist)) {
-                            let blurRatio = 1 - ((1 - t) / fadeDist);
-                            blurAmt = blurRatio * blurMax;
+                        if (useDitherFade && diveAlphaMultiplier < 0.99) {
+                            let ditherLevel = Math.max(0, Math.min(20, Math.floor(diveAlphaMultiplier * 20)));
+                            ditherFilterStr = `url(#dither-dissolve-${ditherLevel})`;
                         }
 
                         let dxCenter = x - W/2;
@@ -1656,14 +1734,14 @@
 
                     if (animState.rotate) {
                         const rotSign = isTopHalf ? 1 : -1;
-                        const rot = phaseRotate * rotSign;
+                        const orbitRot = phaseRotate * rotSign;
                         let dxCenter = x - W/2;
                         let dyCenter = y - H/2;
                         let r = Math.sqrt(dxCenter*dxCenter + dyCenter*dyCenter);
-                        let a = Math.atan2(dyCenter, dxCenter) + rot;
+                        let a = Math.atan2(dyCenter, dxCenter) + orbitRot;
                         x = W/2 + r * Math.cos(a);
                         y = H/2 + r * Math.sin(a);
-                        objRotation += rot;
+                        objRotation += phaseRotate;
                     }
 
                     let cData = getCurveData(x, W, cx, anchorY, cyCtrl);
@@ -1697,7 +1775,7 @@
                     
                     let baseS = (finalSize / 100) * (W / 1200);
                     let customS = shape.relativeSize / 100;
-                    let finalScale = (baseS * customS) * (50 / 256); // 512px canvas normalization
+                    let finalScale = (baseS * customS) * (50 / 256); 
 
                     let pullStretch = (cornerPullVal > 0 && warpFactor > 0.01) ? 1 + (warpFactor * cornerPullVal * 6) : 1;
                     let maxRadius = 350 * (baseS * customS) * Math.max(tangentStretch, pullStretch);
@@ -1719,13 +1797,13 @@
                     ctx.scale(finalScale * tangentStretch, finalScale * scaleYSign);
                     ctx.rotate(objRotation);
 
-                    if (blurAmt > 0.1) {
-                        ctx.filter = `blur(${blurAmt.toFixed(1)}px)`;
+                    if (ditherFilterStr) {
+                        ctx.filter = ditherFilterStr;
+                        ctx.globalAlpha = opacities[obj.layerId];
+                    } else {
+                        ctx.globalAlpha = opacities[obj.layerId] * diveAlphaMultiplier;
                     }
-
-                    ctx.globalAlpha = opacities[obj.layerId] * diveAlphaMultiplier;
                     
-                    // Draw perfectly normalized cached SVG
                     ctx.drawImage(shape.canvas, -256, -256, 512, 512);
 
                     ctx.restore();
@@ -1951,7 +2029,6 @@
                 document.getElementById('val-animSpeedDive').innerText = document.getElementById('animSpeedDive').value;
                 document.getElementById('val-animSpeedRotate').innerText = document.getElementById('animSpeedRotate').value;
                 document.getElementById('val-fadeDuration').innerText = document.getElementById('fadeDuration').value;
-                document.getElementById('val-diveBlurMax').innerText = document.getElementById('diveBlurMax').value;
 
                 const dive = parseFloat(diveRange.value);
                 const panX = parseFloat(panXRange.value);
@@ -2095,8 +2172,7 @@
             document.getElementById('slideXDir').addEventListener('change', (e) => {
                 slideXDir = e.target.value === 'left' ? -1 : 1;
             });
-            document.getElementById('diveBlurTog').addEventListener('change', (e) => {
-                document.getElementById('opts-blur').style.display = e.target.checked ? 'flex' : 'none';
+            document.getElementById('diveDitherTog').addEventListener('change', (e) => {
                 if(!anyAnimating()) window.triggerGraphicUpdate();
             });
 
@@ -2104,7 +2180,6 @@
             document.getElementById('animSpeedDive').addEventListener('input', () => { if(!anyAnimating()) window.triggerGraphicUpdate(); });
             document.getElementById('animSpeedRotate').addEventListener('input', () => { if(!anyAnimating()) window.triggerGraphicUpdate(); });
             document.getElementById('fadeDuration').addEventListener('input', () => { if(!anyAnimating()) window.triggerGraphicUpdate(); });
-            document.getElementById('diveBlurMax').addEventListener('input', () => { if(!anyAnimating()) window.triggerGraphicUpdate(); });
 
             document.getElementById('animScale').addEventListener('input', (e) => {
                 document.getElementById('val-animScale').innerText = (parseFloat(e.target.value) / 10).toFixed(1);
@@ -2194,7 +2269,6 @@
                         toggleAnimOpts('slideX', document.getElementById('animSlideXTog').checked);
                         toggleAnimOpts('dive', document.getElementById('animDiveTog').checked);
                         toggleAnimOpts('rotate', document.getElementById('animRotateTog').checked);
-                        document.getElementById('opts-blur').style.display = document.getElementById('diveBlurTog').checked ? 'flex' : 'none';
                         updateExportResolutions();
 
                         if (settings.shapes && Array.isArray(settings.shapes)) {
@@ -2378,8 +2452,7 @@
                 const reflectTog = document.getElementById('reflectTog').checked;
                 const sFarVal = parseFloat(document.getElementById('sFar').value);
                 const fadeDist = parseFloat(document.getElementById('fadeDuration').value) / 100;
-                const useBlur = document.getElementById('diveBlurTog').checked;
-                const blurMax = parseFloat(document.getElementById('diveBlurMax').value);
+                const useDitherFade = document.getElementById('diveDitherTog').checked;
 
                 const wrapX = 6.0;
                 const wrapY = 12.0;
@@ -2442,22 +2515,23 @@
 
                             let diveScaleMultiplier = 1;
                             let diveAlphaMultiplier = 1;
-                            let blurAmt = 0;
+                            let ditherFilterStr = '';
 
                             if (animState.dive) {
                                 let currentZ = (obj.z - phaseDive) % 1.0;
                                 if (currentZ < 0) currentZ += 1.0;
                                 const t = 1.0 - currentZ;
                                 const motionScale = parseFloat(document.getElementById('animScale').value) / 10;
+                                
                                 diveScaleMultiplier = t * motionScale;
 
                                 let fadeIn = Math.min(1, t / fadeDist);
                                 let fadeOut = Math.min(1, (1 - t) / fadeDist);
                                 diveAlphaMultiplier = Math.min(fadeIn, fadeOut);
 
-                                if (useBlur && (1 - t < fadeDist)) {
-                                    let blurRatio = 1 - ((1 - t) / fadeDist);
-                                    blurAmt = blurRatio * blurMax;
+                                if (useDitherFade && diveAlphaMultiplier < 0.99) {
+                                    let ditherLevel = Math.max(0, Math.min(20, Math.floor(diveAlphaMultiplier * 20)));
+                                    ditherFilterStr = ` filter="url(#dither-dissolve-${ditherLevel})"`;
                                 }
 
                                 const dxC = x - W/2, dyC = y - H/2;
@@ -2467,13 +2541,13 @@
 
                             if (animState.rotate) {
                                 const rotSign = isTopHalf ? 1 : -1;
-                                const rot = phaseRotate * rotSign;
+                                const orbitRot = phaseRotate * rotSign;
                                 const dxC = x - W/2, dyC = y - H/2;
                                 const r = Math.sqrt(dxC*dxC + dyC*dyC);
-                                const a = Math.atan2(dyC, dxC) + rot;
+                                const a = Math.atan2(dyC, dxC) + orbitRot;
                                 x = W/2 + r * Math.cos(a);
                                 y = H/2 + r * Math.sin(a);
-                                objRotation += rot;
+                                objRotation += phaseRotate;
                             }
 
                             const anchorY = isTopHalf ? anchorYTop : anchorYBot;
@@ -2523,14 +2597,14 @@
                             transforms.push(`scale(${(s * tangentStretch).toFixed(4)} ${(s * scaleYSign).toFixed(4)})`);
                             transforms.push(`rotate(${(objRotation * 180 / Math.PI).toFixed(2)})`);
 
-                            const opacity = (opacities[obj.layerId] * diveAlphaMultiplier).toFixed(3);
-                            let filterStr = blurAmt > 0.1 ? ` filter="url(#blur-${Math.ceil(blurAmt)})"` : '';
+                            const opacityAttr = ditherFilterStr ? opacities[obj.layerId].toFixed(3) : (opacities[obj.layerId] * diveAlphaMultiplier).toFixed(3);
 
                             const innerSvgMatch = shape.modifiedSvg.match(/<svg[^>]*>([\s\S]*?)<\/svg>/i);
                             const innerSvg = innerSvgMatch ? innerSvgMatch[1] : '';
+                            const vbToUse = shape.exportViewBox || shape.viewBox;
 
-                            out.push(`<g transform="${transforms.join(' ')}" opacity="${opacity}"${filterStr}>`);
-                            out.push(`<svg x="-256" y="-256" width="512" height="512" viewBox="${shape.viewBox}" preserveAspectRatio="xMidYMid meet">`);
+                            out.push(`<g transform="${transforms.join(' ')}" opacity="${opacityAttr}"${ditherFilterStr}>`);
+                            out.push(`<svg x="-256" y="-256" width="512" height="512" viewBox="${vbToUse}" preserveAspectRatio="xMidYMid meet" overflow="visible">`);
                             out.push(innerSvg);
                             out.push(`</svg></g>`);
                         });
@@ -2546,11 +2620,19 @@
                     <stop offset="1" stop-color="${cc3}"/>`;
                 const gradBotStops = gradTopStops;
 
-                let blurDefs = '';
-                if (useBlur && blurMax > 0) {
-                    for(let i=1; i<=Math.ceil(blurMax); i++) {
-                        blurDefs += `<filter id="blur-${i}"><feGaussianBlur stdDeviation="${i}"/></filter>\n`;
-                    }
+                let ditherDefs = '';
+                for(let i=0; i<=20; i++) {
+                    let A = i / 20;
+                    let intercept = -255 * (1 - A);
+                    ditherDefs += `
+                    <filter id="dither-dissolve-${i}" x="-20%" y="-20%" width="140%" height="140%">
+                        <feTurbulence type="fractalNoise" baseFrequency="1.0" numOctaves="1" result="noise"/>
+                        <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0" in="noise" result="noiseAlpha"/>
+                        <feComponentTransfer in="noiseAlpha" result="noiseThreshold">
+                            <feFuncA type="linear" slope="255" intercept="${intercept}"/>
+                        </feComponentTransfer>
+                        <feComposite operator="in" in="SourceGraphic" in2="noiseThreshold"/>
+                    </filter>\n`;
                 }
 
                 const clipTop = `M 0 0 L ${W} 0 L ${W} ${anchorYTop} Q ${cx} ${cyTop} 0 ${anchorYTop} Z`;
@@ -2603,7 +2685,7 @@
     <linearGradient id="gBot" x1="0" y1="${H}" x2="0" y2="${Math.min(H - 1, H - peakBot)}" gradientUnits="userSpaceOnUse">${gradBotStops}</linearGradient>
     <clipPath id="clipTop"><path d="${clipTop}"/></clipPath>
     <clipPath id="clipBot"><path d="${clipBot}"/></clipPath>
-    ${blurDefs}
+    ${ditherDefs}
   </defs>
   <rect width="${W}" height="${H}" fill="rgb(${bgR},${bgG},${bgB})"/>
   ${isDither ? ditherMarkup : `
