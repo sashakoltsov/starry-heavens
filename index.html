@@ -1,1573 +1,3527 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Landscape Graphic Generator</title>
+
     <style>
+
         :root {
+
             --bg-dark: #0a0a0a;
+
             --bg-panel: rgba(26, 26, 26, 0.85);
+
             --bg-group: #151515;
+
             --accent: #46ABDD;
+
             --text-main: #ffffff;
+
             --text-muted: #aaaaaa;
+
         }
+
+
 
         body {
+
             margin: 0;
+
             display: flex;
+
             height: 100vh;
+
             width: 100vw;
+
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
             background-color: var(--bg-dark);
+
             color: var(--text-main);
+
             overflow: hidden;
+
             position: relative;
+
         }
+
+
 
         /* Floating UI Container */
+
         #ui-container {
+
             position: absolute;
+
             top: 24px;
+
             left: 24px;
+
             z-index: 100;
+
             display: flex;
+
             flex-direction: column;
+
             gap: 12px;
+
             max-height: calc(100vh - 48px);
+
+            width: calc(100% - 48px);
+
+            pointer-events: none; /* Let clicks pass through empty areas */
+
         }
+
+
 
         .tab-buttons {
+
             display: flex;
+
             gap: 10px;
+
+            pointer-events: auto;
+
         }
+
+
 
         .tab-btn {
+
             background: var(--bg-panel);
+
             backdrop-filter: blur(12px);
+
             -webkit-backdrop-filter: blur(12px);
+
             border: 1px solid #444;
+
             color: var(--text-main);
+
             padding: 12px 24px;
+
             border-radius: 30px;
+
             font-size: 11px;
+
             font-weight: 800;
+
             text-transform: uppercase;
+
             cursor: pointer;
+
             transition: all 0.2s ease;
+
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+
             letter-spacing: 0.5px;
+
         }
+
+
 
         .tab-btn:hover {
+
             background: rgba(40, 40, 40, 0.95);
+
         }
+
+
 
         .tab-btn.active {
+
             background: var(--accent);
+
             border-color: var(--accent);
+
             color: #fff;
+
         }
+
+
 
         .tab-panel {
+
             display: none;
+
             background: var(--bg-panel);
+
             backdrop-filter: blur(12px);
+
             -webkit-backdrop-filter: blur(12px);
+
             border: 1px solid #444;
+
             border-radius: 16px;
+
             width: 360px;
+
             flex-shrink: 1;
+
             overflow-y: auto;
+
             padding: 20px;
+
             box-sizing: border-box;
+
             box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+
+            pointer-events: auto;
+
+            max-height: calc(100vh - 100px);
+
         }
+
+
 
         .tab-panel.active {
+
             display: flex;
+
             flex-direction: column;
+
             gap: 16px;
+
         }
+
+
 
         /* Scrollbar styling */
+
         .tab-panel::-webkit-scrollbar { width: 6px; }
+
         .tab-panel::-webkit-scrollbar-track { background: transparent; }
+
         .tab-panel::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+
         .tab-panel::-webkit-scrollbar-thumb:hover { background: #777; }
 
+
+
         /* Collapsible Groups */
+
         details {
+
             background: var(--bg-group);
+
             border: 1px solid #333;
+
             border-radius: 8px;
+
             overflow: hidden;
+
             flex-shrink: 0;
+
         }
+
+
 
         summary {
+
             padding: 14px 16px;
+
             font-size: 11px;
+
             font-weight: 700;
+
             text-transform: uppercase;
+
             color: var(--text-muted);
+
             cursor: pointer;
+
             background: #202020;
+
             user-select: none;
+
             outline: none;
+
             letter-spacing: 0.5px;
+
             display: flex;
+
             align-items: center;
+
             justify-content: space-between;
+
         }
+
+
 
         summary:hover {
+
             background: #282828;
+
             color: #fff;
+
         }
+
+
 
         summary::after {
+
             content: '▼';
+
             font-size: 9px;
+
             transition: transform 0.2s;
+
         }
+
+
 
         details[open] summary::after {
+
             transform: rotate(-180deg);
+
         }
+
+
 
         .details-content {
+
             padding: 16px;
+
             display: flex;
+
             flex-direction: column;
+
             gap: 16px;
+
         }
+
+
 
         /* Forms & Inputs */
+
         .control-group {
+
             display: flex;
+
             flex-direction: column;
+
             gap: 10px;
+
         }
+
+
 
         .label-row {
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
+
         }
+
+
 
         label {
+
             font-size: 11px;
+
             font-weight: 600;
+
             color: var(--text-muted);
+
             display: flex;
+
             align-items: center;
+
             gap: 8px;
+
             text-transform: uppercase;
+
             letter-spacing: 0.5px;
+
         }
+
+
 
         .val-badge {
+
             background: #333;
+
             padding: 2px 6px;
+
             border-radius: 4px;
+
             font-size: 10px;
+
             color: #fff;
+
             min-width: 20px;
+
             text-align: center;
+
         }
+
+
 
         select {
+
             width: 100%;
+
             box-sizing: border-box;
+
             background: #2a2a2a;
+
             color: #fff;
+
             border: 1px solid #555;
+
             padding: 10px;
+
             border-radius: 6px;
+
             outline: none;
+
             cursor: pointer;
+
             font-size: 12px;
+
         }
+
+
 
         input[type="range"].slider {
+
             width: 100%;
+
             cursor: pointer;
+
             accent-color: var(--accent);
+
         }
+
+
 
         button.reset-btn {
+
             background: none;
+
             border: 1px solid #555;
+
             color: var(--text-muted);
+
             cursor: pointer;
+
             border-radius: 4px;
+
             font-size: 10px;
+
             padding: 4px 8px;
+
             transition: 0.2s;
+
             text-transform: uppercase;
+
         }
+
+
 
         button.reset-btn:hover {
+
             background: #555;
+
             color: #fff;
+
         }
+
+
 
         /* Color Circle */
+
         .color-row {
+
             display: flex;
+
             align-items: center;
+
             justify-content: space-between;
+
         }
+
+
 
         input[type="color"].circle-picker {
+
             -webkit-appearance: none;
+
             border: 2px solid #555;
+
             width: 28px;
+
             height: 28px;
+
             border-radius: 50%;
+
             padding: 0;
+
             cursor: pointer;
+
             background: transparent;
+
             flex-shrink: 0;
+
             transition: transform 0.1s;
+
         }
+
+
 
         input[type="color"].circle-picker.small-picker {
+
             width: 18px;
+
             height: 18px;
+
             border-width: 1px;
+
         }
+
+
 
         input[type="color"].circle-picker:hover {
+
             transform: scale(1.1);
+
             border-color: #fff;
+
         }
+
+
 
         input[type="color"].circle-picker::-webkit-color-swatch-wrapper { padding: 0; }
+
         input[type="color"].circle-picker::-webkit-color-swatch { border: none; border-radius: 50%; }
 
+
+
         /* Custom Checkbox Toggle */
+
         .toggle-switch {
+
             position: relative;
+
             display: inline-block;
+
             width: 34px;
+
             height: 18px;
+
         }
+
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
+
         .slider-tog {
+
             position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+
             background-color: #444; transition: .2s; border-radius: 18px;
+
         }
+
         .slider-tog:before {
+
             position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
+
             background-color: white; transition: .2s; border-radius: 50%;
+
         }
+
         input:checked + .slider-tog { background-color: var(--accent); }
+
         input:checked + .slider-tog:before { transform: translateX(16px); }
 
+
+
         /* Custom Gradient Distribution Widget */
+
         .grad-row {
+
             position: relative;
+
             display: flex;
+
             align-items: center;
+
             background: #111;
+
             padding: 12px 16px;
+
             border-radius: 6px;
+
             border: 1px solid #333;
+
         }
+
+
 
         .grad-track {
+
             position: absolute;
+
             top: 50%;
+
             left: 20px;
+
             right: 20px;
+
             height: 2px;
+
             background: #444;
+
             z-index: 1;
+
             transform: translateY(-50%);
+
         }
+
+
 
         .grad-item {
+
             position: relative;
+
             z-index: 2;
+
             display: flex;
+
             align-items: center;
+
             justify-content: center;
+
         }
+
+
 
         .flex-grow {
+
             flex: 1;
+
             padding: 0 8px;
+
         }
+
+
 
         input[type="range"].mid-dot {
+
             -webkit-appearance: none;
+
             width: 100%;
+
             height: 2px;
+
             background: transparent;
+
             cursor: ew-resize;
+
             margin: 0;
+
         }
+
+
 
         input[type="range"].mid-dot::-webkit-slider-thumb {
+
             -webkit-appearance: none;
+
             width: 12px;
+
             height: 12px;
+
             background: var(--text-muted);
+
             border-radius: 50%;
+
             transition: 0.2s;
+
             border: 2px solid #111;
+
         }
+
+
 
         input[type="range"].mid-dot::-webkit-slider-thumb:hover {
+
             background: #fff;
+
             transform: scale(1.3);
+
         }
+
+
 
         /* 2x2 Grid Layout for Layers */
+
         .grid-2x2 {
+
             display: grid;
+
             grid-template-columns: 1fr 1fr;
+
             gap: 12px 10px;
+
             text-align: center;
+
         }
+
         .grid-2x2 .control-group { align-items: center; }
+
         
+
         /* Layer Box Styling */
+
         .layer-box {
+
             background: #222;
+
             padding: 12px;
+
             border-radius: 6px;
+
             border: 1px solid #333;
+
             margin-bottom: 4px;
+
         }
+
         .layer-box h4 {
+
             margin: 0 0 10px 0;
+
             font-size: 10px;
+
             color: #fff;
+
             text-transform: uppercase;
+
         }
+
         .layer-box label {
+
             font-size: 9px;
+
         }
+
+
 
         /* Animation UI Elements */
+
         .anim-toggles {
+
             display: flex;
+
             align-items: center;
+
             background: #111;
+
             border-radius: 8px;
+
             overflow: hidden;
+
             border: 1px solid #333;
+
             padding: 10px 16px;
+
             gap: 20px;
+
             justify-content: space-between;
+
         }
+
         
+
         .anim-label {
+
             cursor: pointer;
+
             display: flex;
+
             align-items: center;
+
             gap: 6px;
+
             transition: color 0.2s;
+
         }
+
         .anim-label:hover { color: #fff; }
+
         .anim-label input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; width: 14px; height: 14px; margin: 0; }
 
+
+
         /* Preview Area */
+
         #preview-area {
+
             flex: 1;
+
             display: flex;
+
             align-items: center;
+
             justify-content: center;
+
             padding: 0;
+
             box-sizing: border-box;
-            background-color: var(--bg-dark);
+
+            background-color: #1D1D1D;
+
             overflow: hidden;
+
             position: absolute;
+
             top: 0; left: 0; right: 0; bottom: 0;
+
             z-index: 1;
+
         }
+
+
 
         #touchpoint {
+
             transition: width 0.2s, height 0.2s;
+
             display: flex;
+
             align-items: center;
+
             justify-content: center;
+
             background-color: transparent;
+
             cursor: grab;
+
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
+
         }
+
         #touchpoint:active { cursor: grabbing; }
+
         canvas {
+
             display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none;
+
         }
+
+
 
     </style>
+
 </head>
+
 <body>
 
-    <div id="ui-container">
-        <div class="tab-buttons">
-            <button id="tab-btn-create" class="tab-btn" onclick="toggleTab('create')">Create</button>
-            <button id="tab-btn-animate" class="tab-btn" onclick="toggleTab('animate')">Animate</button>
-            <button id="tab-btn-finalise" class="tab-btn" onclick="toggleTab('finalise')">Finalise</button>
-            <button class="tab-btn" id="exportBtn" style="background-color: var(--accent); border-color: var(--accent); margin-left: auto;">Export</button>
+
+
+    <!-- ADDED MISSING DOM ELEMENTS: Preview Area and Canvas -->
+
+    <div id="preview-area">
+
+        <div id="touchpoint">
+
+            <canvas id="canvas"></canvas>
+
         </div>
+
+    </div>
+
+
+
+    <div id="ui-container">
+
+        <div class="tab-buttons">
+
+            <button id="tab-btn-create" class="tab-btn" onclick="toggleTab('create')">Create</button>
+
+            <button id="tab-btn-animate" class="tab-btn" onclick="toggleTab('animate')">Animate</button>
+
+            <button id="tab-btn-finalise" class="tab-btn active" onclick="toggleTab('finalise')">Finalise</button>
+
+            
+
+            <div style="flex-grow: 1;"></div>
+
+            
+
+            <button class="tab-btn" id="saveBtn">Save JSON</button>
+
+            <button class="tab-btn" id="loadBtn">Load JSON</button>
+
+            <button class="tab-btn" id="exportBtn" style="background-color: var(--accent); border-color: var(--accent); margin-left: 10px;">Export PNG</button>
+
+        </div>
+
+        
+
+        <input type="file" id="loadFile" style="display:none" accept=".json">
+
+
 
         <!-- CREATE PANEL -->
+
         <div id="panel-create" class="tab-panel">
+
             <!-- Camera & Layout -->
+
             <details open>
+
                 <summary>Camera & Layout</summary>
+
                 <div class="details-content">
+
                     <div class="control-group">
+
                         <label>Format</label>
+
                         <select id="format" class="ui-input">
+
                             <option value="1:1">1:1 (Square)</option>
+
                             <option value="4:5">4:5 (Portrait)</option>
+
                             <option value="3:4">3:4</option>
+
                             <option value="2:3">2:3</option>
+
                             <option value="9:16">9:16 (Story)</option>
+
                             <option value="1:2" selected>1:2</option>
+
                             <option value="16:9">16:9 (Landscape)</option>
+
                         </select>
+
                     </div>
+
                     <div class="control-group">
+
                         <label>Orientation</label>
+
                         <select id="orientation" class="ui-input">
+
                             <option value="horizontal">Horizontal</option>
+
                             <option value="vertical" selected>Vertical</option>
+
                         </select>
+
                     </div>
+
                     <div class="control-group">
+
                         <div class="label-row">
-                            <label>Horizon Curve <span class="val-badge" id="val-hCurve">45</span></label>
+
+                            <label>Horizon Curve <span class="val-badge" id="val-hCurve">36</span></label>
+
                         </div>
-                        <input type="range" class="slider ui-input" id="hCurve" min="0" max="100" value="45">
+
+                        <input type="range" class="slider ui-input" id="hCurve" min="0" max="100" value="36">
+
                     </div>
+
                     <div class="control-group">
+
                         <div class="label-row">
-                            <label>Edge Pinch (Band Width) <span class="val-badge" id="val-edgePinch">19</span></label>
+
+                            <label>Edge Pinch (Band Width) <span class="val-badge" id="val-edgePinch">14</span></label>
+
                         </div>
-                        <input type="range" class="slider ui-input" id="edgePinch" min="0" max="100" value="19">
+
+                        <input type="range" class="slider ui-input" id="edgePinch" min="0" max="100" value="14">
+
                     </div>
+
                     <div class="control-group">
+
                         <div class="label-row">
+
                             <label>Dive In/Out <span class="val-badge" id="val-dive">100</span></label>
+
                         </div>
+
                         <input type="range" class="slider ui-input" id="dive" min="0" max="100" value="100">
+
                     </div>
+
                     <div class="control-group">
+
                         <div class="label-row">
+
                             <label>Pan Left/Right <span class="val-badge" id="val-panX">0</span></label>
+
                             <button class="reset-btn" onclick="resetSlider('panX')">Reset</button>
+
                         </div>
+
                         <input type="range" class="slider ui-input" id="panX" min="-50" max="50" value="0">
+
                     </div>
+
                     <div class="control-group">
+
                         <div class="label-row">
+
                             <label>Pan Up/Down <span class="val-badge" id="val-panY">0</span></label>
+
                             <button class="reset-btn" onclick="resetSlider('panY')">Reset</button>
+
                         </div>
+
                         <input type="range" class="slider ui-input" id="panY" min="-50" max="50" value="0">
+
                     </div>
+
                     <div class="control-group" style="padding-top: 12px; margin-top: 4px; border-top: 1px solid #333;">
+
                         <div class="label-row">
+
                             <label>Mouse Pan (Hover)</label>
+
                             <label class="toggle-switch">
+
                                 <input type="checkbox" id="mousePanTog" class="ui-input">
+
                                 <span class="slider-tog"></span>
+
                             </label>
+
                         </div>
+
                     </div>
+
                 </div>
+
             </details>
+
+
 
             <!-- Colors & Gradient -->
+
             <details>
+
                 <summary>Colors & Masks</summary>
+
                 <div class="details-content">
+
                     <div class="control-group">
+
                         <div class="color-row">
+
                             <label>Background Color</label>
-                            <input type="color" class="circle-picker ui-input" id="bgColor" value="#050505">
+
+                            <input type="color" class="circle-picker ui-input" id="bgColor" value="#000000">
+
                         </div>
+
                     </div>
+
                     <div class="control-group">
+
                         <label>Gradient Distribution</label>
+
                         <div class="grad-row">
+
                             <div class="grad-track"></div>
+
                             <div class="grad-item"><input type="color" id="c1" class="circle-picker ui-input" value="#000000"></div>
+
                             <div class="grad-item flex-grow"><input type="range" id="m1" class="mid-dot ui-input" min="0" max="100" value="50"></div>
-                            <div class="grad-item"><input type="color" id="c2" class="circle-picker ui-input" value="#2f1104"></div>
+
+                            <div class="grad-item"><input type="color" id="c2" class="circle-picker ui-input" value="#1f0c04"></div>
+
                             <div class="grad-item flex-grow"><input type="range" id="m2" class="mid-dot ui-input" min="0" max="100" value="50"></div>
-                            <div class="grad-item"><input type="color" id="c3" class="circle-picker ui-input" value="#3d1d96"></div>
+
+                            <div class="grad-item"><input type="color" id="c3" class="circle-picker ui-input" value="#320b2b"></div>
+
                         </div>
+
                     </div>
+
                 </div>
+
             </details>
+
+
 
             <!-- Object Shapes Mix -->
+
             <details>
+
                 <summary>Shapes Mix</summary>
+
                 <div class="details-content">
+
                     <div class="control-group">
+
                         <label>Total Density</label>
-                        <input type="range" class="slider gen-input" id="totalCount" min="0" max="500" value="380">
+
+                        <input type="range" class="slider gen-input" id="totalCount" min="0" max="500" value="426">
+
                     </div>
+
                     <div class="control-group">
+
                         <label>Distribution Noise</label>
+
                         <input type="range" class="slider gen-input" id="noise" min="0" max="100" value="55">
+
                     </div>
+
                     <div class="control-group">
+
                         <div class="label-row">
+
                             <label>Inner Shadow (3D)</label>
+
                             <label class="toggle-switch">
+
                                 <input type="checkbox" id="pseudo3D" class="ui-input">
+
                                 <span class="slider-tog"></span>
+
                             </label>
+
                         </div>
+
                     </div>
+
                     <div class="control-group">
+
                         <div class="label-row">
+
                             <label><input type="color" id="overrideColor" class="circle-picker small-picker ui-input" value="#0000ff"> Override Colors</label>
+
                             <label class="toggle-switch">
-                                <input type="checkbox" id="overrideTog" class="ui-input" checked>
+
+                                <input type="checkbox" id="overrideTog" class="ui-input">
+
                                 <span class="slider-tog"></span>
+
                             </label>
+
                         </div>
+
                     </div>
+
                     <div class="control-group" style="padding-top: 12px; margin-top: 4px; border-top: 1px solid #333;">
+
                         <div class="label-row">
+
                             <label>Reflect Bottom Half</label>
+
                             <label class="toggle-switch">
+
                                 <input type="checkbox" id="reflectTog" class="ui-input">
+
                                 <span class="slider-tog"></span>
+
                             </label>
+
                         </div>
+
                     </div>
+
                     <label style="margin-top: 10px;">Shape Weights & Colors</label>
+
                     <div class="control-group">
+
                         <div class="label-row">
+
                             <label><input type="color" id="sc0" class="circle-picker small-picker ui-input" value="#0000ff"> Circle</label>
+
                             <span class="val-badge" id="v-s0">20</span>
+
                         </div>
+
                         <input type="range" class="slider gen-input shape-val" data-target="v-s0" id="shape0" min="0" max="100" value="20">
+
                     </div>
+
                     <div class="control-group">
+
                         <div class="label-row">
-                            <label><input type="color" id="sc1" class="circle-picker small-picker ui-input" value="#0000ff"> Diamond</label>
+
+                            <label><input type="color" id="sc1" class="circle-picker small-picker ui-input" value="#6600ff"> Diamond</label>
+
                             <span class="val-badge" id="v-s1">20</span>
+
                         </div>
+
                         <input type="range" class="slider gen-input shape-val" data-target="v-s1" id="shape1" min="0" max="100" value="20">
+
                     </div>
+
                     <div class="control-group">
+
                         <div class="label-row">
-                            <label><input type="color" id="sc2" class="circle-picker small-picker ui-input" value="#0000ff"> Ellipse</label>
+
+                            <label><input type="color" id="sc2" class="circle-picker small-picker ui-input" value="#59140d"> Ellipse</label>
+
                             <span class="val-badge" id="v-s2">20</span>
+
                         </div>
+
                         <input type="range" class="slider gen-input shape-val" data-target="v-s2" id="shape2" min="0" max="100" value="20">
+
                     </div>
+
                     <div class="control-group">
+
                         <div class="label-row">
-                            <label><input type="color" id="sc3" class="circle-picker small-picker ui-input" value="#0000ff"> Star</label>
-                            <span class="val-badge" id="v-s3">20</span>
+
+                            <label><input type="color" id="sc3" class="circle-picker small-picker ui-input" value="#080075"> Star</label>
+
+                            <span class="val-badge" id="v-s3">51</span>
+
                         </div>
-                        <input type="range" class="slider gen-input shape-val" data-target="v-s3" id="shape3" min="0" max="100" value="20">
+
+                        <input type="range" class="slider gen-input shape-val" data-target="v-s3" id="shape3" min="0" max="100" value="51">
+
                     </div>
+
                     <div class="control-group">
+
                         <div class="label-row">
+
                             <label><input type="color" id="sc4" class="circle-picker small-picker ui-input" value="#0000ff"> Stacks</label>
-                            <span class="val-badge" id="v-s4">20</span>
+
+                            <span class="val-badge" id="v-s4">28</span>
+
                         </div>
-                        <input type="range" class="slider gen-input shape-val" data-target="v-s4" id="shape4" min="0" max="100" value="20">
+
+                        <input type="range" class="slider gen-input shape-val" data-target="v-s4" id="shape4" min="0" max="100" value="28">
+
                     </div>
+
                 </div>
+
             </details>
+
+
 
             <!-- Parallax Layers -->
+
             <details>
+
                 <summary>Parallax Layers</summary>
+
                 <div class="details-content">
+
                     <div class="layer-box">
+
                         <h4>Far Layer</h4>
+
                         <div class="grid-2x2">
+
                             <div class="control-group">
+
                                 <label>Weight</label>
-                                <input type="range" class="slider gen-input" id="wFar" min="0" max="100" value="65">
+
+                                <input type="range" class="slider gen-input" id="wFar" min="0" max="100" value="100">
+
                             </div>
+
                             <div class="control-group">
+
                                 <label>Size</label>
-                                <input type="range" class="slider gen-input" id="sFar" min="1" max="50" value="20">
+
+                                <input type="range" class="slider gen-input" id="sFar" min="1" max="50" value="12">
+
                             </div>
+
                             <div class="control-group">
+
                                 <label>Size Noise</label>
+
                                 <input type="range" class="slider gen-input" id="snFar" min="0" max="100" value="20">
+
                             </div>
+
                             <div class="control-group">
+
                                 <label>Opacity</label>
+
                                 <input type="range" class="slider ui-input" id="oFar" min="0" max="100" value="100">
+
                             </div>
+
                         </div>
+
                     </div>
 
+
+
                     <div class="layer-box">
+
                         <h4>Mid Layer</h4>
+
                         <div class="grid-2x2">
+
                             <div class="control-group">
+
                                 <label>Weight</label>
-                                <input type="range" class="slider gen-input" id="wMid" min="0" max="100" value="30">
+
+                                <input type="range" class="slider gen-input" id="wMid" min="0" max="100" value="18">
+
                             </div>
+
                             <div class="control-group">
+
                                 <label>Size</label>
-                                <input type="range" class="slider gen-input" id="sMid" min="5" max="100" value="50">
+
+                                <input type="range" class="slider gen-input" id="sMid" min="5" max="100" value="37">
+
                             </div>
+
                             <div class="control-group">
+
                                 <label>Size Noise</label>
-                                <input type="range" class="slider gen-input" id="snMid" min="0" max="100" value="35">
+
+                                <input type="range" class="slider gen-input" id="snMid" min="0" max="100" value="26">
+
                             </div>
+
                             <div class="control-group">
+
                                 <label>Opacity</label>
+
                                 <input type="range" class="slider ui-input" id="oMid" min="0" max="100" value="100">
+
                             </div>
+
                         </div>
+
                     </div>
 
+
+
                     <div class="layer-box">
+
                         <h4>Close Layer</h4>
+
                         <div class="grid-2x2">
+
                             <div class="control-group">
+
                                 <label>Weight</label>
-                                <input type="range" class="slider gen-input" id="wClose" min="0" max="100" value="15">
+
+                                <input type="range" class="slider gen-input" id="wClose" min="0" max="100" value="27">
+
                             </div>
+
                             <div class="control-group">
+
                                 <label>Size</label>
-                                <input type="range" class="slider gen-input" id="sClose" min="10" max="200" value="105">
+
+                                <input type="range" class="slider gen-input" id="sClose" min="10" max="200" value="127">
+
                             </div>
+
                             <div class="control-group">
+
                                 <label>Size Noise</label>
-                                <input type="range" class="slider gen-input" id="snClose" min="0" max="100" value="50">
+
+                                <input type="range" class="slider gen-input" id="snClose" min="0" max="100" value="48">
+
                             </div>
+
                             <div class="control-group">
+
                                 <label>Opacity</label>
+
                                 <input type="range" class="slider ui-input" id="oClose" min="0" max="100" value="100">
+
                             </div>
+
                         </div>
+
                     </div>
+
                 </div>
+
             </details>
+
+
 
             <!-- Perspective & Warp -->
+
             <details>
+
                 <summary>Perspective & Warp</summary>
+
                 <div class="details-content">
+
                     <div class="control-group">
+
                         <div class="label-row">
-                            <label>Horizon Warp Pull <span class="val-badge" id="val-warpPull">65</span></label>
+
+                            <label>Horizon Warp Pull <span class="val-badge" id="val-warpPull">43</span></label>
+
                         </div>
-                        <input type="range" class="slider ui-input" id="warpPull" min="0" max="100" value="65">
+
+                        <input type="range" class="slider ui-input" id="warpPull" min="0" max="100" value="43">
+
                     </div>
+
                     <div class="control-group">
+
                         <div class="label-row">
-                            <label>Corner Warp Pull <span class="val-badge" id="val-cornerPull">60</span></label>
+
+                            <label>Corner Warp Pull <span class="val-badge" id="val-cornerPull">59</span></label>
+
                         </div>
-                        <input type="range" class="slider ui-input" id="cornerPull" min="0" max="100" value="60">
+
+                        <input type="range" class="slider ui-input" id="cornerPull" min="0" max="100" value="59">
+
                     </div>
+
                 </div>
+
             </details>
+
         </div>
+
+
 
         <!-- ANIMATE PANEL -->
+
         <div id="panel-animate" class="tab-panel">
+
             <div class="anim-toggles">
-                <label class="anim-label"><input type="checkbox" id="animSlideTog" class="ui-input"> Slide</label>
+
+                <label class="anim-label"><input type="checkbox" id="animSlideTog" class="ui-input" checked> Slide</label>
+
                 <label class="anim-label"><input type="checkbox" id="animDiveTog" class="ui-input" checked> Dive</label>
-                <label class="anim-label"><input type="checkbox" id="animRotateTog" class="ui-input"> Rotate</label>
+
+                <label class="anim-label"><input type="checkbox" id="animRotateTog" class="ui-input" checked> Rotate</label>
+
             </div>
+
             <div class="control-group" style="margin-top: 10px;">
+
                 <div class="label-row">
+
                     <label>Motion Speed <span class="val-badge" id="val-animSpeed">6</span></label>
+
                 </div>
+
                 <input type="range" id="animSpeed" class="slider" min="1" max="100" value="6">
+
             </div>
+
             <div class="control-group">
+
                 <div class="label-row">
+
                     <label>Dive Scaling Target <span class="val-badge" id="val-animScale">1.2</span></label>
+
                 </div>
+
                 <input type="range" id="animScale" class="slider" min="10" max="100" value="12">
+
             </div>
+
         </div>
+
+
 
         <!-- FINALISE PANEL -->
-        <div id="panel-finalise" class="tab-panel">
+
+        <div id="panel-finalise" class="tab-panel active">
+
             <div style="background: rgba(255,100,100,0.1); border: 1px solid rgba(255,100,100,0.3); padding: 12px; border-radius: 8px; margin-bottom: 8px;">
+
                 <p style="margin: 0; font-size: 10px; color: #ffcccc; line-height: 1.4;">
+
                     <strong>PERFORMANCE WARNING:</strong> Post-production pixel rasterization is highly intensive. Running these effects during animation will heavily tax your CPU and may lower frame rates!
+
                 </p>
+
             </div>
+
             
+
             <div class="control-group">
+
                 <label>Post-Production Filter</label>
+
                 <select id="postEffect" class="ui-input">
-                    <option value="none" selected>None (Clean Vector)</option>
+
+                    <option value="none">None (Clean Vector)</option>
+
                     <option value="stochastic_print">Stochastic Stippling</option>
-                    <option value="dither_bayer">Colour Dither (8x8 Bayer)</option>
+
+                    <option value="dither_bayer" selected>Colour Dither (8x8 Bayer)</option>
+
                 </select>
+
             </div>
+
             
-            <div class="control-group">
-                <div class="label-row">
-                    <label>Grid Density <span class="val-badge" id="val-effectDensity">50</span></label>
-                </div>
-                <input type="range" class="slider ui-input" id="effectDensity" min="1" max="100" value="50">
-            </div>
 
             <div class="control-group">
+
                 <div class="label-row">
-                    <label>Grid Cell Size <span class="val-badge" id="val-gridSize">4</span></label>
+
+                    <label>Grid Density <span class="val-badge" id="val-effectDensity">100</span></label>
+
                 </div>
-                <input type="range" class="slider ui-input" id="gridSize" min="1" max="20" value="4">
+
+                <input type="range" class="slider ui-input" id="effectDensity" min="1" max="100" value="100">
+
             </div>
 
-            <div class="control-group">
-                <div class="label-row">
-                    <label>Dot Scale (%) <span class="val-badge" id="val-dotScale">100</span></label>
-                </div>
-                <input type="range" class="slider ui-input" id="dotScale" min="10" max="300" value="100">
-            </div>
+
 
             <div class="control-group">
+
                 <div class="label-row">
-                    <label>Dot Scatter (Jitter) <span class="val-badge" id="val-dotJitter">50</span></label>
+
+                    <label>Grid Cell Size <span class="val-badge" id="val-gridSize">1</span></label>
+
                 </div>
-                <input type="range" class="slider ui-input" id="dotJitter" min="0" max="100" value="50">
+
+                <input type="range" class="slider ui-input" id="gridSize" min="1" max="20" value="1">
+
             </div>
 
+
+
             <div class="control-group">
+
                 <div class="label-row">
-                    <label>Dot Warp (Curve/Corner Pull) <span class="val-badge" id="val-dotWarp">0</span></label>
+
+                    <label>Dot Scale (%) <span class="val-badge" id="val-dotScale">202</span></label>
+
                 </div>
-                <input type="range" class="slider ui-input" id="dotWarp" min="0" max="100" value="0">
+
+                <input type="range" class="slider ui-input" id="dotScale" min="10" max="300" value="202">
+
             </div>
+
+
+
+            <div class="control-group">
+
+                <div class="label-row">
+
+                    <label>Dot Scatter (Jitter) <span class="val-badge" id="val-dotJitter">57</span></label>
+
+                </div>
+
+                <input type="range" class="slider ui-input" id="dotJitter" min="0" max="100" value="57">
+
+            </div>
+
+
+
+            <div class="control-group">
+
+                <div class="label-row">
+
+                    <label>Edge Shred (Curve Disconnect) <span class="val-badge" id="val-dotWarp">18</span></label>
+
+                </div>
+
+                <input type="range" class="slider ui-input" id="dotWarp" min="0" max="100" value="18">
+
+            </div>
+
+
 
             <div class="control-group" style="padding-top: 12px; margin-top: 4px; border-top: 1px solid #333;">
+
                 <div class="label-row">
+
                     <label>Sandy Trails (Accumulation)</label>
+
                     <label class="toggle-switch">
-                        <input type="checkbox" id="trailTog" class="ui-input">
+
+                        <input type="checkbox" id="trailTog" class="ui-input" checked>
+
                         <span class="slider-tog"></span>
+
                     </label>
+
                 </div>
+
             </div>
+
+
 
             <div class="control-group">
+
                 <div class="label-row">
-                    <label>Trail Length (Fade) <span class="val-badge" id="val-trailLength">80</span></label>
+
+                    <label>Trail Length (Fade) <span class="val-badge" id="val-trailLength">68</span></label>
+
                 </div>
-                <input type="range" class="slider ui-input" id="trailLength" min="1" max="99" value="80">
+
+                <input type="range" class="slider ui-input" id="trailLength" min="1" max="150" value="68">
+
             </div>
+
+
+
+            <div class="control-group">
+
+                <div class="label-row">
+
+                    <label>Trail Whirl & Scatter <span class="val-badge" id="val-trailWhirl">0</span></label>
+
+                </div>
+
+                <input type="range" class="slider ui-input" id="trailWhirl" min="0" max="100" value="0">
+
+            </div>
+
         </div>
+
+
 
     </div>
 
-    <!-- MAIN CANVAS AREA -->
-    <div id="preview-area">
-        <div id="touchpoint">
-            <canvas id="canvas"></canvas>
-        </div>
-    </div>
+
 
     <script>
-        // --- UI Tab Management ---
+
+        // --- Global UI Handlers ---
+
+        // Defined globally so inline onclick events work immediately before app boot
+
         const tabs = ['create', 'animate', 'finalise'];
+
         function toggleTab(tabId) {
+
             const btn = document.getElementById(`tab-btn-${tabId}`);
+
+            if (!btn) return;
+
             const isActive = btn.classList.contains('active');
+
             
-            // Close all
+
             tabs.forEach(t => {
-                document.getElementById(`tab-btn-${t}`).classList.remove('active');
-                document.getElementById(`panel-${t}`).classList.remove('active');
+
+                const elBtn = document.getElementById(`tab-btn-${t}`);
+
+                const elPanel = document.getElementById(`panel-${t}`);
+
+                if (elBtn) elBtn.classList.remove('active');
+
+                if (elPanel) elPanel.classList.remove('active');
+
             });
+
             
-            // Toggle open if it wasn't already active
+
             if (!isActive) {
+
                 btn.classList.add('active');
-                document.getElementById(`panel-${tabId}`).classList.add('active');
-            }
-        }
 
-        const touchpoint = document.getElementById('touchpoint');
-        const previewArea = document.getElementById('preview-area');
-        
-        // Base rendering canvas
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                const activePanel = document.getElementById(`panel-${tabId}`);
 
-        // Off-screen canvas for rendering individual opaque dots
-        const dotCanvas = document.createElement('canvas');
-        const dotCtx = dotCanvas.getContext('2d', { willReadFrequently: true });
+                if (activePanel) activePanel.classList.add('active');
 
-        // Off-screen accumulation buffer canvas to create "Sandy Trails"
-        const trailCanvas = document.createElement('canvas');
-        const trailCtx = trailCanvas.getContext('2d', { willReadFrequently: true });
-        
-        const formatSel = document.getElementById('format');
-        const orientationSel = document.getElementById('orientation');
-        const hCurveRange = document.getElementById('hCurve');
-        const diveRange = document.getElementById('dive');
-        const panXRange = document.getElementById('panX');
-        const panYRange = document.getElementById('panY');
-        const mousePanTog = document.getElementById('mousePanTog');
-        
-        const bgColorPicker = document.getElementById('bgColor');
-        const c1Picker = document.getElementById('c1');
-        const m1Slider = document.getElementById('m1');
-        const c2Picker = document.getElementById('c2');
-        const m2Slider = document.getElementById('m2');
-        const c3Picker = document.getElementById('c3');
-
-        // Post-Production Elements
-        const postEffectSel = document.getElementById('postEffect');
-        const effectDensityRange = document.getElementById('effectDensity');
-        const gridSizeRange = document.getElementById('gridSize');
-        const dotScaleRange = document.getElementById('dotScale');
-        const dotJitterRange = document.getElementById('dotJitter');
-        const dotWarpRange = document.getElementById('dotWarp');
-        const trailTog = document.getElementById('trailTog');
-        const trailLengthRange = document.getElementById('trailLength');
-
-        const pathDefs = [
-            { d: "M263.48 87.05C282.749 87.05 298.37 71.4292 298.37 52.16C298.37 32.8908 282.749 17.27 263.48 17.27C244.211 17.27 228.59 32.8908 228.59 52.16C228.59 71.4292 244.211 87.05 263.48 87.05Z", cx: 263.48, cy: 52.16 }, 
-            { d: "M183.14 42.1366L162.344 21.3406C156.814 15.8107 147.848 15.8107 142.318 21.3406L121.522 42.1366C115.992 47.6664 115.992 56.632 121.522 62.1618L142.318 82.9578C147.848 88.4877 156.814 88.4877 162.344 82.9578L183.14 62.1618C188.669 56.632 188.669 47.6664 183.14 42.1366Z", cx: 152.33, cy: 52.15 }, 
-            { d: "M363.12 104.32C374.458 104.32 383.65 80.9672 383.65 52.16C383.65 23.3528 374.458 0 363.12 0C351.782 0 342.59 23.3528 342.59 52.16C342.59 80.9672 351.782 104.32 363.12 104.32Z", cx: 363.12, cy: 52.16 }, 
-            { d: "M514.92 52.16C514.92 44.58 502.96 38.11 486.08 35.49C483.46 18.6 476.99 6.64999 469.41 6.64999C461.83 6.64999 455.36 18.61 452.74 35.49C435.85 38.11 423.9 44.58 423.9 52.16C423.9 59.74 435.86 66.21 452.74 68.83C455.36 85.72 461.83 97.67 469.41 97.67C476.99 97.67 483.46 85.71 486.08 68.83C502.97 66.21 514.92 59.74 514.92 52.16Z", cx: 469.41, cy: 52.16 }, 
-            { d: "M69.06 52.95C69.06 49 65.03 45.43 58.55 42.88C65.03 40.33 69.06 36.76 69.06 32.81C69.06 25.06 53.6 18.78 34.53 18.78C15.46 18.78 0 25.05 0 32.8C0 36.75 4.03 40.32 10.51 42.87C4.03 45.42 0 48.99 0 52.94C0 56.89 4.03 60.46 10.51 63.01C4.03 65.56 0 69.13 0 73.08C0 80.83 15.46 87.11 34.53 87.11C53.6 87.11 69.06 80.83 69.06 73.08C69.06 69.13 65.03 65.56 58.55 63.01C65.03 60.46 69.06 56.89 69.06 52.94V52.95Z", cx: 34.53, cy: 52.95 } 
-        ];
-        const path2DInstances = pathDefs.map(p => new Path2D(p.d));
-
-        const EXPORT_RESOLUTION = 2400;
-        let spaceObjects = [];
-
-        // Animation Engine Variables
-        let animState = { slide: false, dive: true, rotate: false };
-        let animSpeed = 6;
-        let phaseDive = 0;
-        let phaseSlide = 0;
-        let phaseRotate = 0;
-        let lastTime = 0;
-        let animFrameReq;
-        let frameSeed = 0; // Dynamic seed for sandy trail noise
-
-        // Extremely fast deterministic 2D Hash function for stable noise
-        function fastHash(x, y, seed) {
-            let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + seed) | 0;
-            h = Math.imul(h ^ (h >>> 13), 3266489909);
-            return ((h ^ (h >>> 16)) >>> 0) / 4294967296.0;
-        }
-
-        function hexToRgb(hex) {
-            let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
-            return {r, g, b};
-        }
-        function rgbToHex(r, g, b) {
-            return "#" + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
-        }
-        function mixColors(color1, color2, weight) {
-            let rgb1 = hexToRgb(color1), rgb2 = hexToRgb(color2);
-            let r = Math.round(rgb1.r + (rgb2.r - rgb1.r) * weight);
-            let g = Math.round(rgb1.g + (rgb2.g - rgb1.g) * weight);
-            let b = Math.round(rgb1.b + (rgb2.b - rgb1.b) * weight);
-            return rgbToHex(r, g, b);
-        }
-
-        function getCurveData(x, W, cx, y0, y1) {
-            let t;
-            let a = W - 2 * cx;
-            let b = 2 * cx;
-            let c_x = -x;
-            if (Math.abs(a) < 0.001) { t = x / W; } else {
-                let det = b * b - 4 * a * c_x;
-                if(det < 0) det = 0;
-                t = (-b + Math.sqrt(det)) / (2 * a);
-                if (t < 0 || t > 1) t = (-b - Math.sqrt(det)) / (2 * a);
-            }
-            t = Math.max(0, Math.min(1, t));
-            let dx = 2 * (1 - t) * cx + 2 * t * (W - cx);
-            let dy = 2 * (1 - t) * (y1 - y0) + 2 * t * (y0 - y1);
-            let angle = Math.atan2(dy, dx);
-            let curveY = (1-t)*(1-t)*y0 + 2*(1-t)*t*y1 + t*t*y0;
-            return { angle, curveY };
-        }
-
-        function initSpaceObjects() {
-            const total = parseInt(document.getElementById('totalCount').value) * 5; 
-            const noise = parseInt(document.getElementById('noise').value);
-            const wFar = parseInt(document.getElementById('wFar').value);
-            const wMid = parseInt(document.getElementById('wMid').value);
-            const wClose = parseInt(document.getElementById('wClose').value);
-            const sumLayers = wFar + wMid + wClose || 1;
-
-            const shapeWeights = [
-                parseInt(document.getElementById('shape0').value),
-                parseInt(document.getElementById('shape1').value),
-                parseInt(document.getElementById('shape2').value),
-                parseInt(document.getElementById('shape3').value),
-                parseInt(document.getElementById('shape4').value)
-            ];
-            const sumShapes = shapeWeights.reduce((a,b) => a+b, 0) || 1;
-
-            spaceObjects = [];
-
-            const layers = [
-                { id: 'far', weight: wFar, baseSizeId: 'sFar', snId: 'snFar', pFactor: 0.2 },
-                { id: 'mid', weight: wMid, baseSizeId: 'sMid', snId: 'snMid', pFactor: 0.6 },
-                { id: 'close', weight: wClose, baseSizeId: 'sClose', snId: 'snClose', pFactor: 1.3 }
-            ];
-
-            layers.forEach(layer => {
-                const layerCount = Math.floor(total * (layer.weight / sumLayers));
-                const snVal = parseFloat(document.getElementById(layer.snId).value) / 100;
-                
-                [true, false].forEach(isTop => {
-                    const halfCount = Math.floor(layerCount / 2);
-                    if (halfCount <= 0) return;
-
-                    const cols = Math.ceil(Math.sqrt(halfCount * 3));
-                    const rows = Math.ceil(halfCount / cols);
-                    
-                    const gw = 3.0 / cols;
-                    const gh = 2.0 / rows;
-
-                    for(let i=0; i<halfCount; i++) {
-                        let r = Math.floor(i / cols);
-                        let c = i % cols;
-
-                        let rndS = Math.random() * sumShapes;
-                        let shapeId = 0, currentWeight = 0;
-                        for(let j=0; j<5; j++) {
-                            currentWeight += shapeWeights[j];
-                            if(rndS < currentWeight) { shapeId = j; break; }
-                        }
-
-                        let jx = (Math.random() - 0.5) * gw * (noise / 100) * 1.8;
-                        let jy = (Math.random() - 0.5) * gh * (noise / 100) * 1.8;
-
-                        let baseX = -1.0 + (c + 0.5) * gw + jx;
-                        let baseY = (isTop ? -1.5 : 0.5) + (r + 0.5) * gh + jy;
-
-                        let baseSize = parseFloat(document.getElementById(layer.baseSizeId).value);
-                        let size = baseSize * (1 + (Math.random() * 2 - 1) * snVal); 
-                        size = Math.max(baseSize * 0.1, size); 
-                        let rotation = Math.random() * Math.PI * 2;
-
-                        spaceObjects.push({ 
-                            shapeId, baseX, baseY, pFactor: layer.pFactor, 
-                            size, baseSize, isTop, rotation, layerId: layer.id,
-                            z: Math.random() 
-                        });
-                    }
-                });
-            });
-        }
-
-        function drawSpaceLayer(W, H, gradientFill, isTopHalf, cx, anchorY, cyCtrl, peakY) {
-            ctx.fillStyle = gradientFill;
-            ctx.fillRect(0, 0, W, H);
-
-            const panX = parseFloat(panXRange.value);
-            const panY = parseFloat(panYRange.value);
-            const diveShift = parseFloat(diveRange.value);
-            const warpPull = parseFloat(document.getElementById('warpPull').value) / 100;
-            const cornerPullVal = parseFloat(document.getElementById('cornerPull').value) / 100;
-            const pseudo3D = document.getElementById('pseudo3D').checked;
-            const overrideTog = document.getElementById('overrideTog').checked;
-            const overrideColor = document.getElementById('overrideColor').value;
-            const reflectTog = document.getElementById('reflectTog').checked;
-            const sFarVal = parseFloat(document.getElementById('sFar').value);
-            
-            const opacities = {
-                far: parseFloat(document.getElementById('oFar').value) / 100,
-                mid: parseFloat(document.getElementById('oMid').value) / 100,
-                close: parseFloat(document.getElementById('oClose').value) / 100
-            };
-
-            const shapeColors = [
-                document.getElementById('sc0').value,
-                document.getElementById('sc1').value,
-                document.getElementById('sc2').value,
-                document.getElementById('sc3').value,
-                document.getElementById('sc4').value
-            ];
-
-            spaceObjects.forEach(obj => {
-                let pX = panX * obj.pFactor;
-                let pY = panY * obj.pFactor;
-                let dY = diveShift * obj.pFactor * 0.003; 
-                
-                let currentBaseX = obj.baseX;
-                if (animState.slide) {
-                    currentBaseX = obj.baseX + phaseSlide * obj.pFactor;
-                    currentBaseX = ((currentBaseX + 1.0) % 3.0 + 3.0) % 3.0 - 1.0;
-                }
-
-                let normalizedY;
-                let scaleYSign = 1;
-
-                if (reflectTog) {
-                    if (!obj.isTop) return; 
-                    
-                    let topNormY = obj.baseY + (pY / 100) - dY;
-                    if (isTopHalf) {
-                        normalizedY = topNormY;
-                    } else {
-                        normalizedY = 1.0 - topNormY;
-                        scaleYSign = -1;
-                    }
-                } else {
-                    if (obj.isTop) {
-                        normalizedY = obj.baseY + (pY / 100) - dY;
-                    } else {
-                        normalizedY = obj.baseY + (pY / 100) + dY;
-                    }
-                }
-
-                let x = (currentBaseX + (pX / 100)) * W;
-                let y = normalizedY * H;
-                let objRotation = obj.rotation;
-
-                let diveScaleMultiplier = 1;
-                let diveAlphaMultiplier = 1;
-
-                if (animState.dive) {
-                    let currentZ = (obj.z - phaseDive) % 1.0;
-                    if (currentZ < 0) currentZ += 1.0;
-                    
-                    let t = 1.0 - currentZ; 
-                    let motionScale = parseFloat(document.getElementById('animScale').value) / 10;
-                    
-                    diveScaleMultiplier = t * motionScale; 
-                    
-                    let fadeIn = Math.min(1, t * 10); 
-                    let fadeOut = Math.min(1, (1 - t) * 8); 
-                    diveAlphaMultiplier = Math.min(fadeIn, fadeOut);
-                    
-                    let dxCenter = x - W/2;
-                    let dyCenter = y - H/2;
-                    x = W/2 + dxCenter * diveScaleMultiplier;
-                    y = H/2 + dyCenter * diveScaleMultiplier;
-                }
-
-                if (animState.rotate) {
-                    let dxCenter = x - W/2;
-                    let dyCenter = y - H/2;
-                    let r = Math.sqrt(dxCenter*dxCenter + dyCenter*dyCenter);
-                    let a = Math.atan2(dyCenter, dxCenter) + phaseRotate;
-                    x = W/2 + r * Math.cos(a);
-                    y = H/2 + r * Math.sin(a);
-                    objRotation += phaseRotate; 
-                }
-
-                let cData = getCurveData(x, W, cx, anchorY, cyCtrl);
-                let deflection = cData.curveY - peakY;
-                y = y + (deflection * warpPull);
-
-                let dxC = x - W/2;
-                let dyC = y - H/2;
-                
-                let xNorm = Math.max(-1, Math.min(1, dxC / (W/2)));
-                let yNorm = Math.max(-1, Math.min(1, dyC / (H/2)));
-                let cornerFactor = Math.pow(Math.abs(xNorm * yNorm), 2); 
-
-                if (cornerPullVal > 0) {
-                    let pullAmt = cornerFactor * cornerPullVal * 0.8; 
-                    x += dxC * pullAmt; 
-                    y += dyC * pullAmt; 
-                }
-
-                let newNormY = y / H;
-                let distToCenter = Math.abs(newNormY - 0.5) * 2; 
-                let horizonProximity = Math.max(0, Math.min(1, 1 - distToCenter)); 
-                
-                let horizonShrink = (obj.baseSize - sFarVal) * horizonProximity * warpPull;
-                let perspSize = Math.max(sFarVal * 0.3, obj.size - Math.max(0, horizonShrink));
-                let finalSize = perspSize * diveScaleMultiplier;
-
-                let warpAngle = cData.angle * warpPull;
-                let tangentStretch = 1 + (Math.abs(warpAngle) * 0.6 * warpPull);
-                let s = (finalSize / 100) * (W / 1200); 
-                
-                let pullStretch = (cornerPullVal > 0 && cornerFactor > 0.01) ? 1 + (cornerFactor * cornerPullVal * 6) : 1;
-                let maxRadius = 350 * s * Math.max(tangentStretch, pullStretch);
-                if (x + maxRadius < 0 || x - maxRadius > W || y + maxRadius < 0 || y - maxRadius > H) {
-                    return; 
-                }
-
-                ctx.save();
-                ctx.translate(x, y);
-                
-                if (cornerPullVal > 0 && cornerFactor > 0.01) {
-                    let angleToCorner = Math.atan2(dyC, dxC);
-                    ctx.rotate(angleToCorner);
-                    ctx.scale(pullStretch, 1);
-                    ctx.rotate(-angleToCorner); 
-                }
-
-                ctx.rotate(warpAngle);
-                ctx.scale(s * tangentStretch, s * scaleYSign); 
-                ctx.rotate(objRotation);
-                
-                ctx.globalAlpha = opacities[obj.layerId] * diveAlphaMultiplier;
-                ctx.translate(-pathDefs[obj.shapeId].cx, -pathDefs[obj.shapeId].cy);
-                
-                ctx.fillStyle = overrideTog ? overrideColor : shapeColors[obj.shapeId];
-                ctx.fill(path2DInstances[obj.shapeId]);
-
-                if (pseudo3D) {
-                    let gw = pathDefs[obj.shapeId].cx * 2;
-                    let gh = pathDefs[obj.shapeId].cy * 2;
-                    let g = ctx.createLinearGradient(0, 0, gw, gh);
-                    g.addColorStop(0, 'rgba(255,255,255,0.6)');
-                    g.addColorStop(1, 'rgba(0,0,0,0.5)');
-                    ctx.fillStyle = g;
-                    ctx.fill(path2DInstances[obj.shapeId]);
-                }
-
-                ctx.restore();
-            });
-        }
-
-        // --- POST-PRODUCTION ENGINE ---
-        function applyPostProcessing() {
-            const effect = postEffectSel.value;
-            if (effect === 'none') return;
-
-            const density = parseFloat(effectDensityRange.value);
-            const gridSize = parseInt(gridSizeRange.value);
-            const dotScaleVal = parseFloat(dotScaleRange.value) / 100;
-            const jitterVal = parseFloat(document.getElementById('dotJitter').value) / 100;
-            const dotWarpVal = parseFloat(document.getElementById('dotWarp').value) / 100;
-            const trailActive = trailTog.checked;
-            const trailFade = 1.0 - (parseFloat(trailLengthRange.value) / 100);
-
-            const w = canvas.width;
-            const h = canvas.height;
-            const imgData = ctx.getImageData(0, 0, w, h);
-            const data = imgData.data;
-
-            // Create transparent target buffer for the specific dots of THIS frame
-            const outData = ctx.createImageData(w, h); 
-
-            // Base math configuration
-            const radius = Math.max(0.5, (gridSize * 0.5) * dotScaleVal); 
-            const rSq = radius * radius;
-            const dotRadiusCeil = Math.ceil(radius);
-            const maxScatter = gridSize * jitterVal * 4.0; 
-
-            if (effect === 'stochastic_print') {
-                const probBase = (density / 100); 
-
-                for (let y = 0; y < h; y += gridSize) {
-                    for (let x = 0; x < w; x += gridSize) {
-                        let rSum = 0, gSum = 0, bSum = 0, count = 0;
-                        
-                        // Evaluate average block intensity for the "Actual Color"
-                        for (let by = 0; by < gridSize && y + by < h; by++) {
-                            for (let bx = 0; bx < gridSize && x + bx < w; bx++) {
-                                let idx = ((y + by) * w + (x + bx)) * 4;
-                                rSum += data[idx]; gSum += data[idx+1]; bSum += data[idx+2];
-                                count++;
-                            }
-                        }
-                        if(count === 0) continue;
-                        let avgR = rSum / count, avgG = gSum / count, avgB = bSum / count;
-
-                        // STABLE Stochastic draw roll
-                        let draw = fastHash(x, y, 1) < probBase;
-
-                        if (draw) {
-                            let dxC = x - w/2;
-                            let dyC = y - h/2;
-                            let xNorm = dxC / (w/2);
-                            let yNorm = dyC / (h/2);
-                            
-                            // Dot Warp (Exponential Cubic Pull to Curve / Corners)
-                            // Using exponential power stops it from uniformly squeezing the whole image, 
-                            // localizing the warp specifically to the deep edges and corners
-                            let pullY = -Math.sign(yNorm) * Math.pow(Math.abs(yNorm), 3) * dotWarpVal * 150.0; 
-                            let pullX = Math.sign(xNorm) * Math.pow(Math.abs(xNorm), 3) * Math.pow(Math.abs(yNorm), 2) * dotWarpVal * 200.0;
-
-                            // Final target offset combining Jitter & Warp (using frameSeed so it scatters dynamically as it animates)
-                            let scatterX = (fastHash(x, y, 4 + frameSeed) - 0.5) * 2 * maxScatter + pullX;
-                            let scatterY = (fastHash(x, y, 5 + frameSeed) - 0.5) * 2 * maxScatter + pullY;
-                            let finalCx = (gridSize / 2) + scatterX;
-                            let finalCy = (gridSize / 2) + scatterY;
-
-                            // Draw an OPAQUE pixel dot (alpha = 255) precisely around the targeted pixel coordinate
-                            for (let by = -dotRadiusCeil; by <= dotRadiusCeil; by++) {
-                                for (let bx = -dotRadiusCeil; bx <= dotRadiusCeil; bx++) {
-                                    if (bx*bx + by*by <= rSq) {
-                                        let px = Math.floor(x + finalCx + bx);
-                                        let py = Math.floor(y + finalCy + by);
-                                        
-                                        if (py >= 0 && py < h && px >= 0 && px < w) {
-                                            let idx = (py * w + px) * 4;
-                                            outData.data[idx] = avgR;
-                                            outData.data[idx+1] = avgG;
-                                            outData.data[idx+2] = avgB;
-                                            outData.data[idx+3] = 255;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } 
-            else if (effect === 'dither_bayer') {
-                const bayer8x8 = [
-                    [ 0, 32,  8, 40,  2, 34, 10, 42],
-                    [48, 16, 56, 24, 50, 18, 58, 26],
-                    [12, 44,  4, 36, 14, 46,  6, 38],
-                    [60, 28, 52, 20, 62, 30, 54, 22],
-                    [ 3, 35, 11, 43,  1, 33,  9, 41],
-                    [51, 19, 59, 27, 49, 17, 57, 25],
-                    [15, 47,  7, 39, 13, 45,  5, 37],
-                    [63, 31, 55, 23, 61, 29, 53, 21]
-                ];
-                
-                const scale = (255 / 64) * (1.5 - (density / 100)); 
-
-                for (let y = 0; y < h; y += gridSize) {
-                    for (let x = 0; x < w; x += gridSize) {
-                        let rSum = 0, gSum = 0, bSum = 0, count = 0;
-                        for (let by = 0; by < gridSize && y + by < h; by++) {
-                            for (let bx = 0; bx < gridSize && x + bx < w; bx++) {
-                                let idx = ((y + by) * w + (x + bx)) * 4;
-                                rSum += data[idx]; gSum += data[idx+1]; bSum += data[idx+2];
-                                count++;
-                            }
-                        }
-                        if(count === 0) continue;
-                        let avgR = rSum / count, avgG = gSum / count, avgB = bSum / count;
-
-                        // 8x8 Bayer evaluation
-                        let bx_bayer = Math.floor(x / gridSize) % 8;
-                        let by_bayer = Math.floor(y / gridSize) % 8;
-                        let threshold = bayer8x8[by_bayer][bx_bayer] * scale;
-
-                        let lum = 0.299 * avgR + 0.587 * avgG + 0.114 * avgB;
-
-                        // If luminance passes Bayer threshold, we draw the dot
-                        let draw = lum > threshold;
-
-                        if (draw) {
-                            let dxC = x - w/2;
-                            let dyC = y - h/2;
-                            let xNorm = dxC / (w/2);
-                            let yNorm = dyC / (h/2);
-                            
-                            // Dot Warp (Exponential Cubic Pull to Curve / Corners)
-                            let pullY = -Math.sign(yNorm) * Math.pow(Math.abs(yNorm), 3) * dotWarpVal * 150.0; 
-                            let pullX = Math.sign(xNorm) * Math.pow(Math.abs(xNorm), 3) * Math.pow(Math.abs(yNorm), 2) * dotWarpVal * 200.0;
-
-                            // Final target offset combining Jitter & Warp (using frameSeed so it scatters as it animates)
-                            let scatterX = (fastHash(x, y, 4 + frameSeed) - 0.5) * 2 * maxScatter + pullX;
-                            let scatterY = (fastHash(x, y, 5 + frameSeed) - 0.5) * 2 * maxScatter + pullY;
-                            let finalCx = (gridSize / 2) + scatterX;
-                            let finalCy = (gridSize / 2) + scatterY;
-
-                            for (let by = -dotRadiusCeil; by <= dotRadiusCeil; by++) {
-                                for (let bx = -dotRadiusCeil; bx <= dotRadiusCeil; bx++) {
-                                    if (bx*bx + by*by <= rSq) {
-                                        let px = Math.floor(x + finalCx + bx);
-                                        let py = Math.floor(y + finalCy + by);
-                                        
-                                        if (py >= 0 && py < h && px >= 0 && px < w) {
-                                            let idx = (py * w + px) * 4;
-                                            outData.data[idx] = avgR;
-                                            outData.data[idx+1] = avgG;
-                                            outData.data[idx+2] = avgB;
-                                            outData.data[idx+3] = 255;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
             }
 
-            // Transfer the single-frame dots to an invisible rendering canvas
-            dotCtx.putImageData(outData, 0, 0);
-
-            // Accumulation Buffer Logic ("Sandy Trails")
-            if (trailActive) {
-                // Dim the existing trails mathematically to slowly fade them out based on trailLength
-                trailCtx.globalCompositeOperation = 'destination-out';
-                trailCtx.fillStyle = `rgba(0, 0, 0, ${trailFade})`;
-                trailCtx.fillRect(0, 0, w, h);
-                trailCtx.globalCompositeOperation = 'source-over';
-            } else {
-                // If toggle off, wipe history instantly
-                trailCtx.clearRect(0, 0, w, h);
-            }
-
-            // Blend the new dots over the accumulation buffer.
-            trailCtx.drawImage(dotCanvas, 0, 0);
-
-            // Finally, rebuild the view. Since we are overriding the vector scene completely, 
-            // lay down a fresh coat of background color, then paint the accumulation buffer on top!
-            ctx.fillStyle = bgColorPicker.value;
-            ctx.fillRect(0, 0, w, h);
-            ctx.drawImage(trailCanvas, 0, 0);
         }
 
-        function updateGraphic() {
-            let [ratioW, ratioH] = formatSel.value.split(':').map(Number);
-            if (orientationSel.value === 'vertical') [ratioW, ratioH] = [ratioH, ratioW];
-            const aspect = ratioW / ratioH;
-            
-            let W = aspect >= 1 ? EXPORT_RESOLUTION : EXPORT_RESOLUTION * aspect;
-            let H = aspect >= 1 ? EXPORT_RESOLUTION / aspect : EXPORT_RESOLUTION;
-            
-            // Reinitialize canvases if dimensions changed
-            if (canvas.width !== W || canvas.height !== H) {
-                canvas.width = W; canvas.height = H;
-                dotCanvas.width = W; dotCanvas.height = H;
-                trailCanvas.width = W; trailCanvas.height = H;
-            }
+        window.toggleTab = toggleTab;
 
-            // Responsive sizing with absolute full background
-            const paRect = previewArea.getBoundingClientRect();
-            const maxCssW = paRect.width - 50; 
-            const maxCssH = paRect.height - 50;
 
-            let cssW = maxCssW, cssH = maxCssW / aspect;
-            if (cssH > maxCssH) { cssH = maxCssH; cssW = maxCssH * aspect; }
-            
-            touchpoint.style.width = `${cssW}px`;
-            touchpoint.style.height = `${cssH}px`;
-
-            const hCurveVal = parseFloat(hCurveRange.value);
-            document.getElementById('val-hCurve').innerText = hCurveVal;
-            
-            if(document.getElementById('val-edgePinch')) { document.getElementById('val-edgePinch').innerText = document.getElementById('edgePinch').value; }
-            if(document.getElementById('val-warpPull')) { document.getElementById('val-warpPull').innerText = document.getElementById('warpPull').value; }
-            if(document.getElementById('val-cornerPull')) { document.getElementById('val-cornerPull').innerText = document.getElementById('cornerPull').value; }
-            
-            document.getElementById('val-dive').innerText = diveRange.value;
-            document.getElementById('val-panX').innerText = panXRange.value;
-            document.getElementById('val-panY').innerText = panYRange.value;
-            
-            document.getElementById('val-effectDensity').innerText = effectDensityRange.value;
-            document.getElementById('val-gridSize').innerText = gridSizeRange.value;
-            document.getElementById('val-dotScale').innerText = dotScaleRange.value;
-            if(document.getElementById('val-dotJitter')) { document.getElementById('val-dotJitter').innerText = document.getElementById('dotJitter').value; }
-            document.getElementById('val-dotWarp').innerText = document.getElementById('dotWarp').value;
-            document.getElementById('val-trailLength').innerText = document.getElementById('trailLength').value;
-
-            document.querySelectorAll('.shape-val').forEach(el => {
-                document.getElementById(el.dataset.target).innerText = el.value;
-            });
-
-            const dive = parseFloat(diveRange.value);
-            const panX = parseFloat(panXRange.value);
-            const panY = parseFloat(panYRange.value);
-
-            ctx.fillStyle = bgColorPicker.value;
-            ctx.fillRect(0, 0, W, H);
-
-            const gap = H * 0.02; 
-            const maxDepth = (H / 2) - gap; 
-            const baseDepth = (dive / 100) * maxDepth;
-
-            const cx = (W / 2) + ((panX / 50) * (W / 2));
-            const shiftY = (panY / 50) * (H / 3); 
-
-            let peakTop = baseDepth + shiftY;
-            let peakBot = baseDepth - shiftY;
-
-            const c = hCurveVal / 100;
-            const flatDepth = H * 0.01; 
-            
-            const edgePinchVal = parseFloat(document.getElementById('edgePinch').value) / 100;
-            const maxPinch = (H / 2) - gap;
-            const pinchOffset = edgePinchVal * maxPinch;
-
-            let anchorYTop = pinchOffset * c + (peakTop - flatDepth) * (1 - c);
-            const cyTop = 2 * peakTop - anchorYTop;
-
-            let anchorYBot = (H - pinchOffset) * c + ((H - peakBot) + flatDepth) * (1 - c);
-            const cyBot = 2 * (H - peakBot) - anchorYBot;
-
-            const c1 = c1Picker.value, c2 = c2Picker.value, c3 = c3Picker.value;
-            const m1Pos = parseFloat(m1Slider.value) / 100;
-            const m2Pos = parseFloat(m2Slider.value) / 100;
-            
-            const mix1 = mixColors(c1, c2, 0.5), mix2 = mixColors(c2, c3, 0.5);
-            const stopM1 = 0 + (0.5 - 0) * m1Pos;
-            const stopM2 = 0.5 + (1.0 - 0.5) * m2Pos;
-
-            let topGrad = ctx.createLinearGradient(0, 0, 0, Math.max(1, peakTop));
-            topGrad.addColorStop(0, c1); topGrad.addColorStop(stopM1, mix1);
-            topGrad.addColorStop(0.5, c2); topGrad.addColorStop(stopM2, mix2);
-            topGrad.addColorStop(1, c3);
-
-            let botGrad = ctx.createLinearGradient(0, H, 0, Math.min(H - 1, H - peakBot));
-            botGrad.addColorStop(0, c1); botGrad.addColorStop(stopM1, mix1);
-            botGrad.addColorStop(0.5, c2); botGrad.addColorStop(stopM2, mix2);
-            botGrad.addColorStop(1, c3);
-
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(0, 0); ctx.lineTo(W, 0); ctx.lineTo(W, anchorYTop);
-            ctx.quadraticCurveTo(cx, cyTop, 0, anchorYTop);
-            ctx.closePath(); ctx.clip(); 
-            drawSpaceLayer(W, H, topGrad, true, cx, anchorYTop, cyTop, peakTop);
-            ctx.restore();
-
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(0, H); ctx.lineTo(W, H); ctx.lineTo(W, anchorYBot);
-            ctx.quadraticCurveTo(cx, cyBot, 0, anchorYBot);
-            ctx.closePath(); ctx.clip(); 
-            drawSpaceLayer(W, H, botGrad, false, cx, anchorYBot, cyBot, H - peakBot);
-            ctx.restore();
-
-            // Apply Post-Production effects ONLY after drawing is complete
-            applyPostProcessing();
-        }
 
         window.resetSlider = function(id) {
-            document.getElementById(id).value = 0;
-            updateGraphic();
+
+            const el = document.getElementById(id);
+
+            if (el) {
+
+                el.value = 0;
+
+                const badge = document.getElementById('val-' + id);
+
+                if (badge) badge.innerText = '0';
+
+            }
+
+            if (typeof window.triggerGraphicUpdate === 'function') {
+
+                window.triggerGraphicUpdate();
+
+            }
+
         };
 
-        // --- ANIMATION LOOP ENGINE ---
-        function animLoop(time) {
-            frameSeed++; // Increment seed globally for continuous sand-scatter
+
+
+        // Use an extremely robust bootstrapper to ensure the DOM is ready 
+
+        // to prevent the black-screen getContext() error in dynamic iframes.
+
+        function initializeApp() {
+
+            const touchpoint = document.getElementById('touchpoint');
+
+            const previewArea = document.getElementById('preview-area');
+
+            const canvas = document.getElementById('canvas');
+
             
-            if (!lastTime) lastTime = time;
-            let dt = (time - lastTime) / 1000;
-            lastTime = time;
 
-            if (dt > 0.1) dt = 0.1;
+            // If DOM isn't ready yet, safely retry in 50ms
 
-            if (animState.dive || animState.slide || animState.rotate) {
-                let speedFactor = (animSpeed / 50); 
-                
-                if (animState.dive) phaseDive += speedFactor * 0.2 * dt;
-                if (animState.slide) phaseSlide += speedFactor * 0.2 * dt;
-                if (animState.rotate) phaseRotate += speedFactor * 0.5 * dt;
-                
-                updateGraphic();
+            if (!canvas) {
+
+                setTimeout(initializeApp, 50);
+
+                return;
+
             }
+
+
+
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+
+
+            // Off-screen canvas for rendering individual opaque dots
+
+            const dotCanvas = document.createElement('canvas');
+
+            const dotCtx = dotCanvas.getContext('2d', { willReadFrequently: true });
+
+
+
+            // Off-screen accumulation buffer canvas to create "Sandy Trails"
+
+            const trailCanvas = document.createElement('canvas');
+
+            const trailCtx = trailCanvas.getContext('2d', { willReadFrequently: true });
+
             
+
+            const formatSel = document.getElementById('format');
+
+            const orientationSel = document.getElementById('orientation');
+
+            const hCurveRange = document.getElementById('hCurve');
+
+            const diveRange = document.getElementById('dive');
+
+            const panXRange = document.getElementById('panX');
+
+            const panYRange = document.getElementById('panY');
+
+            const mousePanTog = document.getElementById('mousePanTog');
+
+            
+
+            const bgColorPicker = document.getElementById('bgColor');
+
+            const c1Picker = document.getElementById('c1');
+
+            const m1Slider = document.getElementById('m1');
+
+            const c2Picker = document.getElementById('c2');
+
+            const m2Slider = document.getElementById('m2');
+
+            const c3Picker = document.getElementById('c3');
+
+
+
+            // Post-Production Elements
+
+            const postEffectSel = document.getElementById('postEffect');
+
+            const effectDensityRange = document.getElementById('effectDensity');
+
+            const gridSizeRange = document.getElementById('gridSize');
+
+            const dotScaleRange = document.getElementById('dotScale');
+
+            const dotJitterRange = document.getElementById('dotJitter');
+
+            const dotWarpRange = document.getElementById('dotWarp');
+
+            const trailTog = document.getElementById('trailTog');
+
+            const trailLengthRange = document.getElementById('trailLength');
+
+            const trailWhirlRange = document.getElementById('trailWhirl');
+
+
+
+            const pathDefs = [
+
+                { d: "M263.48 87.05C282.749 87.05 298.37 71.4292 298.37 52.16C298.37 32.8908 282.749 17.27 263.48 17.27C244.211 17.27 228.59 32.8908 228.59 52.16C228.59 71.4292 244.211 87.05 263.48 87.05Z", cx: 263.48, cy: 52.16 }, 
+
+                { d: "M183.14 42.1366L162.344 21.3406C156.814 15.8107 147.848 15.8107 142.318 21.3406L121.522 42.1366C115.992 47.6664 115.992 56.632 121.522 62.1618L142.318 82.9578C147.848 88.4877 156.814 88.4877 162.344 82.9578L183.14 62.1618C188.669 56.632 188.669 47.6664 183.14 42.1366Z", cx: 152.33, cy: 52.15 }, 
+
+                { d: "M363.12 104.32C374.458 104.32 383.65 80.9672 383.65 52.16C383.65 23.3528 374.458 0 363.12 0C351.782 0 342.59 23.3528 342.59 52.16C342.59 80.9672 351.782 104.32 363.12 104.32Z", cx: 363.12, cy: 52.16 }, 
+
+                { d: "M514.92 52.16C514.92 44.58 502.96 38.11 486.08 35.49C483.46 18.6 476.99 6.64999 469.41 6.64999C461.83 6.64999 455.36 18.61 452.74 35.49C435.85 38.11 423.9 44.58 423.9 52.16C423.9 59.74 435.86 66.21 452.74 68.83C455.36 85.72 461.83 97.67 469.41 97.67C476.99 97.67 483.46 85.71 486.08 68.83C502.97 66.21 514.92 59.74 514.92 52.16Z", cx: 469.41, cy: 52.16 }, 
+
+                { d: "M69.06 52.95C69.06 49 65.03 45.43 58.55 42.88C65.03 40.33 69.06 36.76 69.06 32.81C69.06 25.06 53.6 18.78 34.53 18.78C15.46 18.78 0 25.05 0 32.8C0 36.75 4.03 40.32 10.51 42.87C4.03 45.42 0 48.99 0 52.94C0 56.89 4.03 60.46 10.51 63.01C4.03 65.56 0 69.13 0 73.08C0 80.83 15.46 87.11 34.53 87.11C53.6 87.11 69.06 80.83 69.06 73.08C69.06 69.13 65.03 65.56 58.55 63.01C65.03 60.46 69.06 56.89 69.06 52.94V52.95Z", cx: 34.53, cy: 52.95 } 
+
+            ];
+
+            const path2DInstances = pathDefs.map(p => new Path2D(p.d));
+
+
+
+            const EXPORT_RESOLUTION = 2400;
+
+            let spaceObjects = [];
+
+
+
+            // Animation Engine Variables
+
+            let animState = { slide: true, dive: true, rotate: true };
+
+            let animSpeed = 6;
+
+            let phaseDive = 0;
+
+            let phaseSlide = 0;
+
+            let phaseRotate = 0;
+
+            let lastTime = 0;
+
+            let animFrameReq;
+
+            let frameSeed = 0;
+
+
+
+            // Extremely fast deterministic 2D Hash function for stable noise
+
+            function fastHash(x, y, seed) {
+
+                let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + seed) | 0;
+
+                h = Math.imul(h ^ (h >>> 13), 3266489909);
+
+                return ((h ^ (h >>> 16)) >>> 0) / 4294967296.0;
+
+            }
+
+
+
+            function hexToRgb(hex) {
+
+                let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+
+                return {r, g, b};
+
+            }
+
+            function rgbToHex(r, g, b) {
+
+                return "#" + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+
+            }
+
+            function mixColors(color1, color2, weight) {
+
+                let rgb1 = hexToRgb(color1), rgb2 = hexToRgb(color2);
+
+                let r = Math.round(rgb1.r + (rgb2.r - rgb1.r) * weight);
+
+                let g = Math.round(rgb1.g + (rgb2.g - rgb1.g) * weight);
+
+                let b = Math.round(rgb1.b + (rgb2.b - rgb1.b) * weight);
+
+                return rgbToHex(r, g, b);
+
+            }
+
+
+
+            function getCurveData(x, W, cx, y0, y1) {
+
+                let t;
+
+                let a = W - 2 * cx;
+
+                let b = 2 * cx;
+
+                let c_x = -x;
+
+                if (Math.abs(a) < 0.001) { t = x / W; } else {
+
+                    let det = b * b - 4 * a * c_x;
+
+                    if(det < 0) det = 0;
+
+                    t = (-b + Math.sqrt(det)) / (2 * a);
+
+                    if (t < 0 || t > 1) t = (-b - Math.sqrt(det)) / (2 * a);
+
+                }
+
+                t = Math.max(0, Math.min(1, t));
+
+                let dx = 2 * (1 - t) * cx + 2 * t * (W - cx);
+
+                let dy = 2 * (1 - t) * (y1 - y0) + 2 * t * (y0 - y1);
+
+                let angle = Math.atan2(dy, dx);
+
+                let curveY = (1-t)*(1-t)*y0 + 2*(1-t)*t*y1 + t*t*y0;
+
+                return { angle, curveY };
+
+            }
+
+
+
+            function initSpaceObjects() {
+
+                const total = parseInt(document.getElementById('totalCount').value) * 5; 
+
+                const noise = parseInt(document.getElementById('noise').value);
+
+                const wFar = parseInt(document.getElementById('wFar').value);
+
+                const wMid = parseInt(document.getElementById('wMid').value);
+
+                const wClose = parseInt(document.getElementById('wClose').value);
+
+                const sumLayers = wFar + wMid + wClose || 1;
+
+
+
+                const shapeWeights = [
+
+                    parseInt(document.getElementById('shape0').value),
+
+                    parseInt(document.getElementById('shape1').value),
+
+                    parseInt(document.getElementById('shape2').value),
+
+                    parseInt(document.getElementById('shape3').value),
+
+                    parseInt(document.getElementById('shape4').value)
+
+                ];
+
+                const sumShapes = shapeWeights.reduce((a,b) => a+b, 0) || 1;
+
+
+
+                spaceObjects = [];
+
+
+
+                const layers = [
+
+                    { id: 'far', weight: wFar, baseSizeId: 'sFar', snId: 'snFar', pFactor: 0.2 },
+
+                    { id: 'mid', weight: wMid, baseSizeId: 'sMid', snId: 'snMid', pFactor: 0.6 },
+
+                    { id: 'close', weight: wClose, baseSizeId: 'sClose', snId: 'snClose', pFactor: 1.3 }
+
+                ];
+
+
+
+                layers.forEach(layer => {
+
+                    const layerCount = Math.floor(total * (layer.weight / sumLayers));
+
+                    const snVal = parseFloat(document.getElementById(layer.snId).value) / 100;
+
+                    
+
+                    [true, false].forEach(isTop => {
+
+                        const halfCount = Math.floor(layerCount / 2);
+
+                        if (halfCount <= 0) return;
+
+
+
+                        const cols = Math.ceil(Math.sqrt(halfCount * 3));
+
+                        const rows = Math.ceil(halfCount / cols);
+
+                        
+
+                        const gw = 3.0 / cols;
+
+                        const gh = 2.0 / rows;
+
+
+
+                        for(let i=0; i<halfCount; i++) {
+
+                            let r = Math.floor(i / cols);
+
+                            let c = i % cols;
+
+
+
+                            let rndS = Math.random() * sumShapes;
+
+                            let shapeId = 0, currentWeight = 0;
+
+                            for(let j=0; j<5; j++) {
+
+                                currentWeight += shapeWeights[j];
+
+                                if(rndS < currentWeight) { shapeId = j; break; }
+
+                            }
+
+
+
+                            let jx = (Math.random() - 0.5) * gw * (noise / 100) * 1.8;
+
+                            let jy = (Math.random() - 0.5) * gh * (noise / 100) * 1.8;
+
+
+
+                            let baseX = -1.0 + (c + 0.5) * gw + jx;
+
+                            let baseY = (isTop ? -1.5 : 0.5) + (r + 0.5) * gh + jy;
+
+
+
+                            let baseSize = parseFloat(document.getElementById(layer.baseSizeId).value);
+
+                            let size = baseSize * (1 + (Math.random() * 2 - 1) * snVal); 
+
+                            size = Math.max(baseSize * 0.1, size); 
+
+                            let rotation = Math.random() * Math.PI * 2;
+
+
+
+                            spaceObjects.push({ 
+
+                                shapeId, baseX, baseY, pFactor: layer.pFactor, 
+
+                                size, baseSize, isTop, rotation, layerId: layer.id,
+
+                                z: Math.random() 
+
+                            });
+
+                        }
+
+                    });
+
+                });
+
+            }
+
+
+
+            function drawSpaceLayer(W, H, gradientFill, isTopHalf, cx, anchorY, cyCtrl, peakY) {
+
+                ctx.fillStyle = gradientFill;
+
+                ctx.fillRect(0, 0, W, H);
+
+
+
+                const panX = parseFloat(panXRange.value);
+
+                const panY = parseFloat(panYRange.value);
+
+                const diveShift = parseFloat(diveRange.value);
+
+                const warpPull = parseFloat(document.getElementById('warpPull').value) / 100;
+
+                const cornerPullVal = parseFloat(document.getElementById('cornerPull').value) / 100;
+
+                const pseudo3D = document.getElementById('pseudo3D').checked;
+
+                const overrideTog = document.getElementById('overrideTog').checked;
+
+                const overrideColor = document.getElementById('overrideColor').value;
+
+                const reflectTog = document.getElementById('reflectTog').checked;
+
+                const sFarVal = parseFloat(document.getElementById('sFar').value);
+
+                
+
+                const opacities = {
+
+                    far: parseFloat(document.getElementById('oFar').value) / 100,
+
+                    mid: parseFloat(document.getElementById('oMid').value) / 100,
+
+                    close: parseFloat(document.getElementById('oClose').value) / 100
+
+                };
+
+
+
+                const shapeColors = [
+
+                    document.getElementById('sc0').value,
+
+                    document.getElementById('sc1').value,
+
+                    document.getElementById('sc2').value,
+
+                    document.getElementById('sc3').value,
+
+                    document.getElementById('sc4').value
+
+                ];
+
+
+
+                spaceObjects.forEach(obj => {
+
+                    let pX = panX * obj.pFactor;
+
+                    let pY = panY * obj.pFactor;
+
+                    let dY = diveShift * obj.pFactor * 0.003; 
+
+                    
+
+                    let currentBaseX = obj.baseX;
+
+                    if (animState.slide) {
+
+                        currentBaseX = obj.baseX + phaseSlide * obj.pFactor;
+
+                        currentBaseX = ((currentBaseX + 1.0) % 3.0 + 3.0) % 3.0 - 1.0;
+
+                    }
+
+
+
+                    // UNIFIED RENDERING: If reflection is on, we process both normal and mirrored coordinates
+
+                    let passes = reflectTog ? [false, true] : [false];
+
+
+
+                    passes.forEach(isReflection => {
+
+                        // In reflection pass, only process top objects to mirror them to bottom.
+
+                        if(isReflection && !obj.isTop) return; 
+
+
+
+                        let normalizedY;
+
+                        let scaleYSign = 1;
+
+
+
+                        if (isReflection) {
+
+                            let topNormY = obj.baseY + (pY / 100) - dY;
+
+                            normalizedY = 1.0 - topNormY;
+
+                            scaleYSign = -1;
+
+                        } else {
+
+                            if (obj.isTop) {
+
+                                normalizedY = obj.baseY + (pY / 100) - dY;
+
+                            } else {
+
+                                normalizedY = obj.baseY + (pY / 100) + dY;
+
+                            }
+
+                        }
+
+
+
+                        let x = (currentBaseX + (pX / 100)) * W;
+
+                        let y = normalizedY * H;
+
+                        let objRotation = obj.rotation;
+
+
+
+                        let diveScaleMultiplier = 1;
+
+                        let diveAlphaMultiplier = 1;
+
+
+
+                        if (animState.dive) {
+
+                            let currentZ = (obj.z - phaseDive) % 1.0;
+
+                            if (currentZ < 0) currentZ += 1.0;
+
+                            
+
+                            let t = 1.0 - currentZ; 
+
+                            let motionScale = parseFloat(document.getElementById('animScale').value) / 10;
+
+                            
+
+                            diveScaleMultiplier = t * motionScale; 
+
+                            
+
+                            let fadeIn = Math.min(1, t * 10); 
+
+                            let fadeOut = Math.min(1, (1 - t) * 8); 
+
+                            diveAlphaMultiplier = Math.min(fadeIn, fadeOut);
+
+                            
+
+                            let dxCenter = x - W/2;
+
+                            let dyCenter = y - H/2;
+
+                            x = W/2 + dxCenter * diveScaleMultiplier;
+
+                            y = H/2 + dyCenter * diveScaleMultiplier;
+
+                        }
+
+
+
+                        if (animState.rotate) {
+
+                            let dxCenter = x - W/2;
+
+                            let dyCenter = y - H/2;
+
+                            let r = Math.sqrt(dxCenter*dxCenter + dyCenter*dyCenter);
+
+                            let a = Math.atan2(dyCenter, dxCenter) + phaseRotate;
+
+                            x = W/2 + r * Math.cos(a);
+
+                            y = H/2 + r * Math.sin(a);
+
+                            objRotation += phaseRotate; 
+
+                        }
+
+
+
+                        let cData = getCurveData(x, W, cx, anchorY, cyCtrl);
+
+                        let deflection = cData.curveY - peakY;
+
+                        y = y + (deflection * warpPull);
+
+
+
+                        let dxC = x - W/2;
+
+                        let dyC = y - H/2;
+
+                        
+
+                        let xNorm = Math.max(-1, Math.min(1, dxC / (W/2)));
+
+                        let yNorm = Math.max(-1, Math.min(1, dyC / (H/2)));
+
+                        let cornerFactor = Math.pow(Math.abs(xNorm * yNorm), 2); 
+
+
+
+                        if (cornerPullVal > 0) {
+
+                            let pullAmt = cornerFactor * cornerPullVal * 0.8; 
+
+                            x += dxC * pullAmt; 
+
+                            y += dyC * pullAmt; 
+
+                        }
+
+
+
+                        let newNormY = y / H;
+
+                        let distToCenter = Math.abs(newNormY - 0.5) * 2; 
+
+                        let horizonProximity = Math.max(0, Math.min(1, 1 - distToCenter)); 
+
+                        
+
+                        let horizonShrink = (obj.baseSize - sFarVal) * horizonProximity * warpPull;
+
+                        let perspSize = Math.max(sFarVal * 0.3, obj.size - Math.max(0, horizonShrink));
+
+                        let finalSize = perspSize * diveScaleMultiplier;
+
+
+
+                        let warpAngle = cData.angle * warpPull;
+
+                        let tangentStretch = 1 + (Math.abs(warpAngle) * 0.6 * warpPull);
+
+                        let s = (finalSize / 100) * (W / 1200); 
+
+                        
+
+                        let pullStretch = (cornerPullVal > 0 && cornerFactor > 0.01) ? 1 + (cornerFactor * cornerPullVal * 6) : 1;
+
+                        let maxRadius = 350 * s * Math.max(tangentStretch, pullStretch);
+
+                        if (x + maxRadius < 0 || x - maxRadius > W || y + maxRadius < 0 || y - maxRadius > H) {
+
+                            return; 
+
+                        }
+
+
+
+                        ctx.save();
+
+                        ctx.translate(x, y);
+
+                        
+
+                        if (cornerPullVal > 0 && cornerFactor > 0.01) {
+
+                            let angleToCorner = Math.atan2(dyC, dxC);
+
+                            ctx.rotate(angleToCorner);
+
+                            ctx.scale(pullStretch, 1);
+
+                            ctx.rotate(-angleToCorner); 
+
+                        }
+
+
+
+                        ctx.rotate(warpAngle);
+
+                        ctx.scale(s * tangentStretch, s * scaleYSign); 
+
+                        ctx.rotate(objRotation);
+
+                        
+
+                        ctx.globalAlpha = opacities[obj.layerId] * diveAlphaMultiplier;
+
+                        ctx.translate(-pathDefs[obj.shapeId].cx, -pathDefs[obj.shapeId].cy);
+
+                        
+
+                        ctx.fillStyle = overrideTog ? overrideColor : shapeColors[obj.shapeId];
+
+                        ctx.fill(path2DInstances[obj.shapeId]);
+
+
+
+                        if (pseudo3D) {
+
+                            let gw = pathDefs[obj.shapeId].cx * 2;
+
+                            let gh = pathDefs[obj.shapeId].cy * 2;
+
+                            let g = ctx.createLinearGradient(0, 0, gw, gh);
+
+                            g.addColorStop(0, 'rgba(255,255,255,0.6)');
+
+                            g.addColorStop(1, 'rgba(0,0,0,0.5)');
+
+                            ctx.fillStyle = g;
+
+                            ctx.fill(path2DInstances[obj.shapeId]);
+
+                        }
+
+
+
+                        ctx.restore();
+
+                    });
+
+                });
+
+            }
+
+
+
+            // --- POST-PRODUCTION ENGINE ---
+
+            function applyPostProcessing() {
+
+                const effect = postEffectSel.value;
+
+                if (effect === 'none') return;
+
+
+
+                const density = parseFloat(effectDensityRange.value);
+
+                const gridSize = parseInt(gridSizeRange.value);
+
+                const dotScaleVal = parseFloat(dotScaleRange.value) / 100;
+
+                const jitterVal = parseFloat(document.getElementById('dotJitter').value) / 100;
+
+                const dotWarpVal = parseFloat(document.getElementById('dotWarp').value) / 100;
+
+                const trailActive = trailTog.checked;
+
+                
+
+                const trailRetention = parseFloat(trailLengthRange.value) / 100;
+
+                const trailWhirlVal = parseFloat(trailWhirlRange.value);
+
+
+
+                const w = canvas.width;
+
+                const h = canvas.height;
+
+                const imgData = ctx.getImageData(0, 0, w, h);
+
+                const data = imgData.data;
+
+
+
+                const outData = ctx.createImageData(w, h); 
+
+
+
+                const radius = Math.max(0.5, (gridSize * 0.5) * dotScaleVal); 
+
+                const rSq = radius * radius;
+
+                const dotRadiusCeil = Math.ceil(radius);
+
+                const maxScatter = gridSize * jitterVal * 4.0; 
+
+
+
+                if (effect === 'stochastic_print') {
+
+                    const probBase = (density / 100); 
+
+
+
+                    for (let y = 0; y < h; y += gridSize) {
+
+                        for (let x = 0; x < w; x += gridSize) {
+
+                            let rSum = 0, gSum = 0, bSum = 0, count = 0;
+
+                            
+
+                            // PERFORMANCE FAST-PATH: If gridSize is 1, completely skip the averaging loops!
+
+                            if (gridSize === 1) {
+
+                                let idx = (y * w + x) * 4;
+
+                                rSum = data[idx];
+
+                                gSum = data[idx+1];
+
+                                bSum = data[idx+2];
+
+                                count = 1;
+
+                            } else {
+
+                                for (let by = 0; by < gridSize && y + by < h; by++) {
+
+                                    for (let bx = 0; bx < gridSize && x + bx < w; bx++) {
+
+                                        let idx = ((y + by) * w + (x + bx)) * 4;
+
+                                        rSum += data[idx]; gSum += data[idx+1]; bSum += data[idx+2];
+
+                                        count++;
+
+                                    }
+
+                                }
+
+                            }
+
+                            
+
+                            if(count === 0) continue;
+
+                            let avgR = rSum / count, avgG = gSum / count, avgB = bSum / count;
+
+
+
+                            // STABLE Stochastic draw roll
+
+                            let draw = fastHash(x, y, 1) < probBase;
+
+
+
+                            if (draw) {
+
+                                let dxC = x - w/2;
+
+                                let dyC = y - h/2;
+
+                                let xNorm = dxC / (w/2);
+
+                                let yNorm = dyC / (h/2);
+
+                                
+
+                                let edgeDist = Math.max(Math.abs(xNorm), Math.abs(yNorm));
+
+                                let warpFactor = Math.max(0, (edgeDist - 0.4) * 1.66); 
+
+                                warpFactor = Math.pow(warpFactor, 4); 
+
+                                
+
+                                let gravityX = Math.sign(xNorm) * warpFactor * dotWarpVal * 150.0;
+
+                                let gravityY = -Math.sign(yNorm) * warpFactor * dotWarpVal * 150.0;
+
+                                let shredX = (fastHash(x, y, 12 + frameSeed) - 0.5) * warpFactor * dotWarpVal * 400.0;
+
+                                let shredY = (fastHash(x, y, 13 + frameSeed) - 0.5) * warpFactor * dotWarpVal * 400.0;
+
+
+
+                                let scatterX = (fastHash(x, y, 4 + frameSeed) - 0.5) * 2 * maxScatter + gravityX + shredX;
+
+                                let scatterY = (fastHash(x, y, 5 + frameSeed) - 0.5) * 2 * maxScatter + gravityY + shredY;
+
+                                let finalCx = (gridSize / 2) + scatterX;
+
+                                let finalCy = (gridSize / 2) + scatterY;
+
+
+
+                                for (let by = -dotRadiusCeil; by <= dotRadiusCeil; by++) {
+
+                                    for (let bx = -dotRadiusCeil; bx <= dotRadiusCeil; bx++) {
+
+                                        if (bx*bx + by*by <= rSq) {
+
+                                            let px = Math.floor(x + finalCx + bx);
+
+                                            let py = Math.floor(y + finalCy + by);
+
+                                            
+
+                                            if (py >= 0 && py < h && px >= 0 && px < w) {
+
+                                                let idx = (py * w + px) * 4;
+
+                                                outData.data[idx] = avgR;
+
+                                                outData.data[idx+1] = avgG;
+
+                                                outData.data[idx+2] = avgB;
+
+                                                outData.data[idx+3] = 255;
+
+                                            }
+
+                                        }
+
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                } 
+
+                else if (effect === 'dither_bayer') {
+
+                    const bayer8x8 = [
+
+                        [ 0, 32,  8, 40,  2, 34, 10, 42],
+
+                        [48, 16, 56, 24, 50, 18, 58, 26],
+
+                        [12, 44,  4, 36, 14, 46,  6, 38],
+
+                        [60, 28, 52, 20, 62, 30, 54, 22],
+
+                        [ 3, 35, 11, 43,  1, 33,  9, 41],
+
+                        [51, 19, 59, 27, 49, 17, 57, 25],
+
+                        [15, 47,  7, 39, 13, 45,  5, 37],
+
+                        [63, 31, 55, 23, 61, 29, 53, 21]
+
+                    ];
+
+                    
+
+                    const scale = (255 / 64) * (1.5 - (density / 100)); 
+
+
+
+                    for (let y = 0; y < h; y += gridSize) {
+
+                        for (let x = 0; x < w; x += gridSize) {
+
+                            let rSum = 0, gSum = 0, bSum = 0, count = 0;
+
+                            
+
+                            // PERFORMANCE FAST-PATH
+
+                            if (gridSize === 1) {
+
+                                let idx = (y * w + x) * 4;
+
+                                rSum = data[idx];
+
+                                gSum = data[idx+1];
+
+                                bSum = data[idx+2];
+
+                                count = 1;
+
+                            } else {
+
+                                for (let by = 0; by < gridSize && y + by < h; by++) {
+
+                                    for (let bx = 0; bx < gridSize && x + bx < w; bx++) {
+
+                                        let idx = ((y + by) * w + (x + bx)) * 4;
+
+                                        rSum += data[idx]; gSum += data[idx+1]; bSum += data[idx+2];
+
+                                        count++;
+
+                                    }
+
+                                }
+
+                            }
+
+                            
+
+                            if(count === 0) continue;
+
+                            let avgR = rSum / count, avgG = gSum / count, avgB = bSum / count;
+
+
+
+                            let bx_bayer = Math.floor(x / gridSize) % 8;
+
+                            let by_bayer = Math.floor(y / gridSize) % 8;
+
+                            let threshold = bayer8x8[by_bayer][bx_bayer] * scale;
+
+
+
+                            let lum = 0.299 * avgR + 0.587 * avgG + 0.114 * avgB;
+
+                            let draw = lum > threshold;
+
+
+
+                            if (draw) {
+
+                                let dxC = x - w/2;
+
+                                let dyC = y - h/2;
+
+                                let xNorm = dxC / (w/2);
+
+                                let yNorm = dyC / (h/2);
+
+                                
+
+                                let edgeDist = Math.max(Math.abs(xNorm), Math.abs(yNorm));
+
+                                let warpFactor = Math.max(0, (edgeDist - 0.4) * 1.66); 
+
+                                warpFactor = Math.pow(warpFactor, 4); 
+
+                                
+
+                                let gravityX = Math.sign(xNorm) * warpFactor * dotWarpVal * 150.0;
+
+                                let gravityY = -Math.sign(yNorm) * warpFactor * dotWarpVal * 150.0;
+
+                                let shredX = (fastHash(x, y, 12 + frameSeed) - 0.5) * warpFactor * dotWarpVal * 400.0;
+
+                                let shredY = (fastHash(x, y, 13 + frameSeed) - 0.5) * warpFactor * dotWarpVal * 400.0;
+
+
+
+                                let scatterX = (fastHash(x, y, 4 + frameSeed) - 0.5) * 2 * maxScatter + gravityX + shredX;
+
+                                let scatterY = (fastHash(x, y, 5 + frameSeed) - 0.5) * 2 * maxScatter + gravityY + shredY;
+
+                                let finalCx = (gridSize / 2) + scatterX;
+
+                                let finalCy = (gridSize / 2) + scatterY;
+
+
+
+                                for (let by = -dotRadiusCeil; by <= dotRadiusCeil; by++) {
+
+                                    for (let bx = -dotRadiusCeil; bx <= dotRadiusCeil; bx++) {
+
+                                        if (bx*bx + by*by <= rSq) {
+
+                                            let px = Math.floor(x + finalCx + bx);
+
+                                            let py = Math.floor(y + finalCy + by);
+
+                                            
+
+                                            if (py >= 0 && py < h && px >= 0 && px < w) {
+
+                                                let idx = (py * w + px) * 4;
+
+                                                outData.data[idx] = avgR;
+
+                                                outData.data[idx+1] = avgG;
+
+                                                outData.data[idx+2] = avgB;
+
+                                                outData.data[idx+3] = 255;
+
+                                            }
+
+                                        }
+
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+
+
+                dotCtx.putImageData(outData, 0, 0);
+
+
+
+                if (trailActive) {
+
+                    let fadeSub = (1.0 - Math.min(1.0, trailRetention)) * 255;
+
+                    let glowAdd = Math.max(0, trailRetention - 1.0) * 50;
+
+
+
+                    if (trailWhirlVal > 0) {
+
+                        const tData = trailCtx.getImageData(0, 0, w, h);
+
+                        const tPixels = tData.data;
+
+                        const newTData = trailCtx.createImageData(w, h);
+
+                        const newTPixels = newTData.data;
+
+
+
+                        const cx = w / 2;
+
+                        const cy = h / 2;
+
+
+
+                        for (let i = 0; i < tPixels.length; i += 4) {
+
+                            let alpha = tPixels[i+3];
+
+                            if (alpha > 0) {
+
+                                
+
+                                let newAlpha = alpha - fadeSub + glowAdd;
+
+                                if (newAlpha <= 0) continue;
+
+                                newAlpha = Math.min(255, newAlpha);
+
+
+
+                                let pixelIndex = i / 4;
+
+                                let px = pixelIndex % w;
+
+                                let py = Math.floor(pixelIndex / w);
+
+
+
+                                let ageFactor = 1.0 - (alpha / 255.0); 
+
+
+
+                                let dx = px - cx;
+
+                                let dy = py - cy;
+
+                                let dist = Math.sqrt(dx*dx + dy*dy);
+
+                                
+
+                                let dirX = -dy / (dist || 1);
+
+                                let dirY = dx / (dist || 1);
+
+
+
+                                // Fast-Hash Bitwise Flowfield (Massive Performance Boost over Math.sin/cos)
+
+                                let noiseX = fastHash(px, py, frameSeed) - 0.5;
+
+                                let noiseY = fastHash(px, py, frameSeed + 1) - 0.5;
+
+
+
+                                let force = (trailWhirlVal * 0.15) * (0.2 + ageFactor * 0.8); 
+
+                                let moveX = dirX * force * 0.5 + noiseX * force * 2.0;
+
+                                let moveY = dirY * force * 0.5 + noiseY * force * 2.0;
+
+
+
+                                // Probabilistic Rounding handles sub-pixel speeds, keeping slow sand from freezing!
+
+                                let nx = px + Math.floor(moveX) + (Math.random() < (moveX - Math.floor(moveX)) ? 1 : 0);
+
+                                let ny = py + Math.floor(moveY) + (Math.random() < (moveY - Math.floor(moveY)) ? 1 : 0);
+
+
+
+                                if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+
+                                    let nIdx = (ny * w + nx) * 4;
+
+                                    newTPixels[nIdx] = tPixels[i];
+
+                                    newTPixels[nIdx+1] = tPixels[i+1];
+
+                                    newTPixels[nIdx+2] = tPixels[i+2];
+
+                                    newTPixels[nIdx+3] = Math.min(255, newTPixels[nIdx+3] + newAlpha);
+
+                                }
+
+                            }
+
+                        }
+
+                        trailCtx.putImageData(newTData, 0, 0);
+
+                    } else {
+
+                        trailCtx.globalCompositeOperation = 'destination-out';
+
+                        trailCtx.fillStyle = `rgba(0, 0, 0, ${Math.max(0, 1.0 - trailRetention)})`;
+
+                        trailCtx.fillRect(0, 0, w, h);
+
+                        trailCtx.globalCompositeOperation = 'source-over';
+
+                    }
+
+                } else {
+
+                    trailCtx.clearRect(0, 0, w, h);
+
+                }
+
+
+
+                trailCtx.drawImage(dotCanvas, 0, 0);
+
+
+
+                let bgR = parseInt(bgColorPicker.value.slice(1, 3), 16);
+
+                let bgG = parseInt(bgColorPicker.value.slice(3, 5), 16);
+
+                let bgB = parseInt(bgColorPicker.value.slice(5, 7), 16);
+
+                
+
+                ctx.fillStyle = `rgb(${bgR}, ${bgG}, ${bgB})`;
+
+                ctx.fillRect(0, 0, w, h);
+
+                ctx.drawImage(trailCanvas, 0, 0);
+
+            }
+
+
+
+            function updateGraphic() {
+
+                let [ratioW, ratioH] = formatSel.value.split(':').map(Number);
+
+                if (orientationSel.value === 'vertical') [ratioW, ratioH] = [ratioH, ratioW];
+
+                const aspect = ratioW / ratioH;
+
+                
+
+                let W = aspect >= 1 ? EXPORT_RESOLUTION : EXPORT_RESOLUTION * aspect;
+
+                let H = aspect >= 1 ? EXPORT_RESOLUTION / aspect : EXPORT_RESOLUTION;
+
+                
+
+                if (canvas.width !== W || canvas.height !== H) {
+
+                    canvas.width = W; canvas.height = H;
+
+                    dotCanvas.width = W; dotCanvas.height = H;
+
+                    trailCanvas.width = W; trailCanvas.height = H;
+
+                }
+
+
+
+                const paRect = previewArea.getBoundingClientRect();
+
+                const maxCssW = paRect.width - 50; 
+
+                const maxCssH = paRect.height - 50;
+
+
+
+                let cssW = maxCssW, cssH = maxCssW / aspect;
+
+                if (cssH > maxCssH) { cssH = maxCssH; cssW = maxCssH * aspect; }
+
+                
+
+                touchpoint.style.width = `${cssW}px`;
+
+                touchpoint.style.height = `${cssH}px`;
+
+
+
+                const hCurveVal = parseFloat(hCurveRange.value);
+
+                document.getElementById('val-hCurve').innerText = hCurveVal;
+
+                
+
+                if(document.getElementById('val-edgePinch')) { document.getElementById('val-edgePinch').innerText = document.getElementById('edgePinch').value; }
+
+                if(document.getElementById('val-warpPull')) { document.getElementById('val-warpPull').innerText = document.getElementById('warpPull').value; }
+
+                if(document.getElementById('val-cornerPull')) { document.getElementById('val-cornerPull').innerText = document.getElementById('cornerPull').value; }
+
+                
+
+                document.getElementById('val-dive').innerText = diveRange.value;
+
+                document.getElementById('val-panX').innerText = panXRange.value;
+
+                document.getElementById('val-panY').innerText = panYRange.value;
+
+                
+
+                document.getElementById('val-effectDensity').innerText = effectDensityRange.value;
+
+                document.getElementById('val-gridSize').innerText = gridSizeRange.value;
+
+                document.getElementById('val-dotScale').innerText = dotScaleRange.value;
+
+                if(document.getElementById('val-dotJitter')) { document.getElementById('val-dotJitter').innerText = document.getElementById('dotJitter').value; }
+
+                document.getElementById('val-dotWarp').innerText = document.getElementById('dotWarp').value;
+
+                document.getElementById('val-trailLength').innerText = document.getElementById('trailLength').value;
+
+                document.getElementById('val-trailWhirl').innerText = document.getElementById('trailWhirl').value;
+
+
+
+                document.querySelectorAll('.shape-val').forEach(el => {
+
+                    document.getElementById(el.dataset.target).innerText = el.value;
+
+                });
+
+
+
+                const dive = parseFloat(diveRange.value);
+
+                const panX = parseFloat(panXRange.value);
+
+                const panY = parseFloat(panYRange.value);
+
+
+
+                ctx.fillStyle = bgColorPicker.value;
+
+                ctx.fillRect(0, 0, W, H);
+
+
+
+                const gap = H * 0.02; 
+
+                const maxDepth = (H / 2) - gap; 
+
+                const baseDepth = (dive / 100) * maxDepth;
+
+
+
+                const cx = (W / 2) + ((panX / 50) * (W / 2));
+
+                const shiftY = (panY / 50) * (H / 3); 
+
+
+
+                let peakTop = baseDepth + shiftY;
+
+                let peakBot = baseDepth - shiftY;
+
+
+
+                const c = hCurveVal / 100;
+
+                const flatDepth = H * 0.01; 
+
+                
+
+                const edgePinchVal = parseFloat(document.getElementById('edgePinch').value) / 100;
+
+                const maxPinch = (H / 2) - gap;
+
+                const pinchOffset = edgePinchVal * maxPinch;
+
+
+
+                let anchorYTop = pinchOffset * c + (peakTop - flatDepth) * (1 - c);
+
+                const cyTop = 2 * peakTop - anchorYTop;
+
+
+
+                let anchorYBot = (H - pinchOffset) * c + ((H - peakBot) + flatDepth) * (1 - c);
+
+                const cyBot = 2 * (H - peakBot) - anchorYBot;
+
+
+
+                const c1 = c1Picker.value, c2 = c2Picker.value, c3 = c3Picker.value;
+
+                const m1Pos = parseFloat(m1Slider.value) / 100;
+
+                const m2Pos = parseFloat(m2Slider.value) / 100;
+
+                
+
+                const mix1 = mixColors(c1, c2, 0.5), mix2 = mixColors(c2, c3, 0.5);
+
+                const stopM1 = 0 + (0.5 - 0) * m1Pos;
+
+                const stopM2 = 0.5 + (1.0 - 0.5) * m2Pos;
+
+
+
+                let topGrad = ctx.createLinearGradient(0, 0, 0, Math.max(1, peakTop));
+
+                topGrad.addColorStop(0, c1); topGrad.addColorStop(stopM1, mix1);
+
+                topGrad.addColorStop(0.5, c2); topGrad.addColorStop(stopM2, mix2);
+
+                topGrad.addColorStop(1, c3);
+
+
+
+                let botGrad = ctx.createLinearGradient(0, H, 0, Math.min(H - 1, H - peakBot));
+
+                botGrad.addColorStop(0, c1); botGrad.addColorStop(stopM1, mix1);
+
+                botGrad.addColorStop(0.5, c2); botGrad.addColorStop(stopM2, mix2);
+
+                botGrad.addColorStop(1, c3);
+
+
+
+                ctx.save();
+
+                ctx.beginPath();
+
+                ctx.moveTo(0, 0); ctx.lineTo(W, 0); ctx.lineTo(W, anchorYTop);
+
+                ctx.quadraticCurveTo(cx, cyTop, 0, anchorYTop);
+
+                ctx.closePath(); ctx.clip(); 
+
+                drawSpaceLayer(W, H, topGrad, true, cx, anchorYTop, cyTop, peakTop);
+
+                ctx.restore();
+
+
+
+                ctx.save();
+
+                ctx.beginPath();
+
+                ctx.moveTo(0, H); ctx.lineTo(W, H); ctx.lineTo(W, anchorYBot);
+
+                ctx.quadraticCurveTo(cx, cyBot, 0, anchorYBot);
+
+                ctx.closePath(); ctx.clip(); 
+
+                drawSpaceLayer(W, H, botGrad, false, cx, anchorYBot, cyBot, H - peakBot);
+
+                ctx.restore();
+
+
+
+                applyPostProcessing();
+
+            }
+
+
+
+            window.triggerGraphicUpdate = updateGraphic;
+
+
+
+            // --- ANIMATION LOOP ENGINE ---
+
+            function animLoop(time) {
+
+                frameSeed++; 
+
+                
+
+                if (!lastTime) lastTime = time;
+
+                let dt = (time - lastTime) / 1000;
+
+                lastTime = time;
+
+
+
+                if (dt > 0.1) dt = 0.1;
+
+
+
+                if (animState.dive || animState.slide || animState.rotate) {
+
+                    let speedFactor = (animSpeed / 50); 
+
+                    
+
+                    if (animState.dive) phaseDive += speedFactor * 0.2 * dt;
+
+                    if (animState.slide) phaseSlide += speedFactor * 0.2 * dt;
+
+                    if (animState.rotate) phaseRotate += speedFactor * 0.5 * dt;
+
+                    
+
+                    updateGraphic();
+
+                }
+
+                
+
+                animFrameReq = requestAnimationFrame(animLoop);
+
+            }
+
+
+
             animFrameReq = requestAnimationFrame(animLoop);
+
+
+
+            document.getElementById('animSlideTog').addEventListener('change', (e) => {
+
+                animState.slide = e.target.checked;
+
+                if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic();
+
+            });
+
+            document.getElementById('animDiveTog').addEventListener('change', (e) => {
+
+                animState.dive = e.target.checked;
+
+                if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic();
+
+            });
+
+            document.getElementById('animRotateTog').addEventListener('change', (e) => {
+
+                animState.rotate = e.target.checked;
+
+                if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic();
+
+            });
+
+
+
+            document.getElementById('animSpeed').addEventListener('input', (e) => {
+
+                animSpeed = parseFloat(e.target.value);
+
+                document.getElementById('val-animSpeed').innerText = animSpeed;
+
+            });
+
+
+
+            document.getElementById('animScale').addEventListener('input', (e) => {
+
+                let val = parseFloat(e.target.value) / 10;
+
+                document.getElementById('val-animScale').innerText = val.toFixed(1);
+
+                if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic();
+
+            });
+
+
+
+            postEffectSel.addEventListener('change', updateGraphic);
+
+            effectDensityRange.addEventListener('input', (e) => { document.getElementById('val-effectDensity').innerText = e.target.value; updateGraphic(); });
+
+            gridSizeRange.addEventListener('input', (e) => { document.getElementById('val-gridSize').innerText = e.target.value; updateGraphic(); });
+
+            dotScaleRange.addEventListener('input', (e) => { document.getElementById('val-dotScale').innerText = e.target.value; updateGraphic(); });
+
+            dotJitterRange.addEventListener('input', (e) => { document.getElementById('val-dotJitter').innerText = e.target.value; updateGraphic(); });
+
+            dotWarpRange.addEventListener('input', (e) => { document.getElementById('val-dotWarp').innerText = e.target.value; updateGraphic(); });
+
+            trailTog.addEventListener('change', updateGraphic);
+
+            trailLengthRange.addEventListener('input', (e) => { document.getElementById('val-trailLength').innerText = e.target.value; updateGraphic(); });
+
+            trailWhirlRange.addEventListener('input', (e) => { document.getElementById('val-trailWhirl').innerText = e.target.value; updateGraphic(); });
+
+
+
+            document.getElementById('saveBtn').addEventListener('click', () => {
+
+                let settings = {};
+
+                document.querySelectorAll('.ui-input, .gen-input').forEach(el => {
+
+                    if (el.type === 'checkbox') settings[el.id] = el.checked;
+
+                    else settings[el.id] = el.value;
+
+                });
+
+                const blob = new Blob([JSON.stringify(settings, null, 2)], {type: 'application/json'});
+
+                const link = document.createElement('a');
+
+                link.href = URL.createObjectURL(blob);
+
+                link.download = 'landscape-settings.json';
+
+                link.click();
+
+            });
+
+
+
+            document.getElementById('loadBtn').addEventListener('click', () => {
+
+                document.getElementById('loadFile').click();
+
+            });
+
+
+
+            document.getElementById('loadFile').addEventListener('change', (e) => {
+
+                const file = e.target.files[0];
+
+                if (!file) return;
+
+                const reader = new FileReader();
+
+                reader.onload = (event) => {
+
+                    try {
+
+                        const settings = JSON.parse(event.target.result);
+
+                        for (let id in settings) {
+
+                            const el = document.getElementById(id);
+
+                            if (el) {
+
+                                if (el.type === 'checkbox') el.checked = settings[id];
+
+                                else el.value = settings[id];
+
+                                
+
+                                if (id === 'animSlideTog') animState.slide = el.checked;
+
+                                if (id === 'animDiveTog') animState.dive = el.checked;
+
+                                if (id === 'animRotateTog') animState.rotate = el.checked;
+
+                                if (id === 'animSpeed') animSpeed = parseFloat(el.value);
+
+                            }
+
+                        }
+
+                        
+
+                        document.querySelectorAll('.val-badge').forEach(badge => {
+
+                            let targetId = badge.id.replace('val-', '');
+
+                            if (document.getElementById(targetId)) {
+
+                                if (targetId === 'animScale') badge.innerText = (parseFloat(document.getElementById(targetId).value) / 10).toFixed(1);
+
+                                else badge.innerText = document.getElementById(targetId).value;
+
+                            }
+
+                        });
+
+
+
+                        document.querySelectorAll('.shape-val').forEach(el => {
+
+                            if(document.getElementById(el.dataset.target)) {
+
+                                document.getElementById(el.dataset.target).innerText = el.value;
+
+                            }
+
+                        });
+
+
+
+                        initSpaceObjects();
+
+                        updateGraphic();
+
+                    } catch(err) {
+
+                        const loadBtn = document.getElementById('loadBtn');
+
+                        const origText = loadBtn.innerText;
+
+                        loadBtn.innerText = "Invalid JSON!";
+
+                        loadBtn.style.backgroundColor = "#ff4444";
+
+                        loadBtn.style.color = "#fff";
+
+                        setTimeout(() => {
+
+                            loadBtn.innerText = origText;
+
+                            loadBtn.style.backgroundColor = "";
+
+                            loadBtn.style.color = "";
+
+                        }, 2000);
+
+                    }
+
+                };
+
+                reader.readAsText(file);
+
+                e.target.value = '';
+
+            });
+
+
+
+            let isDragging = false, startX, startY, initialPanX, initialPanY;
+
+            
+
+            mousePanTog.addEventListener('change', () => {
+
+                touchpoint.style.cursor = mousePanTog.checked ? 'crosshair' : 'grab';
+
+            });
+
+
+
+            previewArea.addEventListener('mousemove', (e) => {
+
+                if (mousePanTog.checked) {
+
+                    const rect = previewArea.getBoundingClientRect();
+
+                    const panX = ((e.clientX - rect.left) / rect.width * 100) - 50;
+
+                    const panY = ((e.clientY - rect.top) / rect.height * 100) - 50;
+
+                    
+
+                    panXRange.value = Math.max(-50, Math.min(50, panX));
+
+                    panYRange.value = Math.max(-50, Math.min(50, panY));
+
+                    
+
+                    if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic();
+
+                }
+
+            });
+
+
+
+            touchpoint.addEventListener('mousedown', (e) => {
+
+                if (mousePanTog.checked) return;
+
+                isDragging = true; startX = e.clientX; startY = e.clientY;
+
+                initialPanX = parseFloat(panXRange.value); initialPanY = parseFloat(panYRange.value);
+
+            });
+
+            window.addEventListener('mousemove', (e) => {
+
+                if (!isDragging || mousePanTog.checked) return;
+
+                const sensitivity = 0.15;
+
+                panXRange.value = Math.max(-50, Math.min(50, initialPanX - ((e.clientX - startX) * sensitivity)));
+
+                panYRange.value = Math.max(-50, Math.min(50, initialPanY - ((e.clientY - startY) * sensitivity)));
+
+                
+
+                if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic();
+
+            });
+
+            window.addEventListener('mouseup', () => isDragging = false);
+
+            window.addEventListener('mouseleave', () => isDragging = false);
+
+
+
+            document.querySelectorAll('.ui-input:not(#postEffect):not(#effectDensity):not(#gridSize):not(#dotScale):not(#dotJitter):not(#dotWarp):not(#trailTog):not(#trailLength):not(#trailWhirl)').forEach(input => input.addEventListener('input', () => {
+
+                if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic();
+
+            }));
+
+            document.querySelectorAll('.gen-input').forEach(input => {
+
+                input.addEventListener('input', () => { 
+
+                    initSpaceObjects(); 
+
+                    if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic(); 
+
+                });
+
+            });
+
+
+
+            document.getElementById('exportBtn').addEventListener('click', () => {
+
+                const link = document.createElement('a');
+
+                link.download = `landscape-${formatSel.value.replace(':', 'x')}.png`;
+
+                link.href = canvas.toDataURL('image/png');
+
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+
+            });
+
+
+
+            window.addEventListener('resize', updateGraphic);
+
+
+
+            touchpoint.style.cursor = mousePanTog.checked ? 'crosshair' : 'grab';
+
+
+
+            initSpaceObjects();
+
+            updateGraphic(); 
+
         }
 
-        animFrameReq = requestAnimationFrame(animLoop);
 
-        // Bind Animation UI toggle controls
-        document.getElementById('animSlideTog').addEventListener('change', (e) => {
-            animState.slide = e.target.checked;
-            if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic();
-        });
-        document.getElementById('animDiveTog').addEventListener('change', (e) => {
-            animState.dive = e.target.checked;
-            if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic();
-        });
-        document.getElementById('animRotateTog').addEventListener('change', (e) => {
-            animState.rotate = e.target.checked;
-            if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic();
-        });
 
-        document.getElementById('animSpeed').addEventListener('input', (e) => {
-            animSpeed = parseFloat(e.target.value);
-            document.getElementById('val-animSpeed').innerText = animSpeed;
-        });
+        // Extremely robust bootstrapper to ensure Canvas is loaded
 
-        document.getElementById('animScale').addEventListener('input', (e) => {
-            let val = parseFloat(e.target.value) / 10;
-            document.getElementById('val-animScale').innerText = val.toFixed(1);
-            if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic();
-        });
+        if (document.readyState === 'loading') {
 
-        // Bind Post-Production Inputs
-        postEffectSel.addEventListener('change', updateGraphic);
-        
-        effectDensityRange.addEventListener('input', (e) => { document.getElementById('val-effectDensity').innerText = e.target.value; updateGraphic(); });
-        gridSizeRange.addEventListener('input', (e) => { document.getElementById('val-gridSize').innerText = e.target.value; updateGraphic(); });
-        dotScaleRange.addEventListener('input', (e) => { document.getElementById('val-dotScale').innerText = e.target.value; updateGraphic(); });
-        dotJitterRange.addEventListener('input', (e) => { document.getElementById('val-dotJitter').innerText = e.target.value; updateGraphic(); });
-        dotWarpRange.addEventListener('input', (e) => { document.getElementById('val-dotWarp').innerText = e.target.value; updateGraphic(); });
-        trailTog.addEventListener('change', updateGraphic);
-        trailLengthRange.addEventListener('input', (e) => { document.getElementById('val-trailLength').innerText = e.target.value; updateGraphic(); });
+            document.addEventListener('DOMContentLoaded', initializeApp);
 
-        // --- UI Interactions ---
-        let isDragging = false, startX, startY, initialPanX, initialPanY;
-        
-        mousePanTog.addEventListener('change', () => {
-            touchpoint.style.cursor = mousePanTog.checked ? 'crosshair' : 'grab';
-        });
+        } else {
 
-        previewArea.addEventListener('mousemove', (e) => {
-            if (mousePanTog.checked) {
-                const rect = previewArea.getBoundingClientRect();
-                const panX = ((e.clientX - rect.left) / rect.width * 100) - 50;
-                const panY = ((e.clientY - rect.top) / rect.height * 100) - 50;
-                
-                panXRange.value = Math.max(-50, Math.min(50, panX));
-                panYRange.value = Math.max(-50, Math.min(50, panY));
-                
-                if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic();
-            }
-        });
+            initializeApp();
 
-        touchpoint.addEventListener('mousedown', (e) => {
-            if (mousePanTog.checked) return;
-            isDragging = true; startX = e.clientX; startY = e.clientY;
-            initialPanX = parseFloat(panXRange.value); initialPanY = parseFloat(panYRange.value);
-        });
-        window.addEventListener('mousemove', (e) => {
-            if (!isDragging || mousePanTog.checked) return;
-            const sensitivity = 0.15;
-            panXRange.value = Math.max(-50, Math.min(50, initialPanX - ((e.clientX - startX) * sensitivity)));
-            panYRange.value = Math.max(-50, Math.min(50, initialPanY - ((e.clientY - startY) * sensitivity)));
-            
-            if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic();
-        });
-        window.addEventListener('mouseup', () => isDragging = false);
-        window.addEventListener('mouseleave', () => isDragging = false);
+        }
 
-        // General settings listeners
-        document.querySelectorAll('.ui-input:not(#postEffect):not(#effectDensity):not(#gridSize):not(#dotScale):not(#dotJitter):not(#dotWarp):not(#trailTog):not(#trailLength)').forEach(input => input.addEventListener('input', () => {
-            if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic();
-        }));
-        document.querySelectorAll('.gen-input').forEach(input => {
-            input.addEventListener('input', () => { 
-                initSpaceObjects(); 
-                if(!animState.dive && !animState.slide && !animState.rotate) updateGraphic(); 
-            });
-        });
-
-        document.getElementById('exportBtn').addEventListener('click', () => {
-            const link = document.createElement('a');
-            link.download = `landscape-${formatSel.value.replace(':', 'x')}.png`;
-            link.href = canvas.toDataURL('image/png');
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-        });
-
-        window.addEventListener('resize', updateGraphic);
-
-        touchpoint.style.cursor = mousePanTog.checked ? 'crosshair' : 'grab';
-
-        initSpaceObjects();
-        updateGraphic(); 
     </script>
+
 </body>
+
 </html>
