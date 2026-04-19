@@ -95,6 +95,11 @@
 
         .top-widget label {
             margin: 0;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .fps-circle {
@@ -430,7 +435,7 @@
             display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none;
         }
 
-        /* --- New Bottom-Right Pan Widget --- */
+        /* --- Bottom-Right Pan Widget --- */
         #pan-widget {
             position: absolute;
             bottom: 30px;
@@ -516,6 +521,7 @@
             <button id="tab-btn-create" class="tab-btn" onclick="toggleTab('create')">Create</button>
             <button id="tab-btn-animate" class="tab-btn" onclick="toggleTab('animate')">Animate</button>
             <button id="tab-btn-finalise" class="tab-btn active" onclick="toggleTab('finalise')">Finalise</button>
+            <button id="tab-btn-export" class="tab-btn" onclick="toggleTab('export')">Export</button>
 
             <div style="flex-grow: 1;"></div>
             
@@ -525,28 +531,14 @@
                 <span id="fps-text" style="font-size:11px; font-weight:800; width:45px; text-align:right;">60 FPS</span>
             </div>
 
-            <!-- Export Size Slider directly in Top Bar -->
+            <!-- Density Slider directly in Top Bar -->
             <div class="top-widget" style="padding-right: 10px;">
-                <label>Export Size <span class="val-badge" id="val-exportSize">2400</span></label>
-                <input type="range" id="exportSize" class="slider" min="1000" max="4000" step="100" value="2400" style="width: 80px;">
+                <label>Density <span class="val-badge" id="val-renderDensity">2400</span></label>
+                <input type="range" id="renderDensity" class="slider ui-input" min="500" max="8000" step="100" value="2400" style="width: 100px;">
             </div>
 
             <button class="tab-btn" id="saveBtn">Save JSON</button>
             <button class="tab-btn" id="loadBtn">Load JSON</button>
-            <div class="export-wrap" style="position: relative; pointer-events: auto;">
-                <button class="tab-btn" id="exportBtn" style="background-color: var(--accent); border-color: var(--accent);">Export PNG</button>
-                <button class="tab-btn" id="exportSettingsBtn" title="Export settings" style="background-color: var(--accent); border-color: var(--accent); padding: 12px 10px; margin-left: 4px;">⚙</button>
-                <div id="exportPopover" style="display:none; position: absolute; top: 55px; right: 0; background: var(--bg-panel); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid #444; border-radius: 12px; padding: 16px; width: 220px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); z-index: 200;">
-                    <div class="control-group">
-                        <label style="font-size: 10px;">Format</label>
-                        <select id="exportFormat" style="margin-top: 6px;">
-                            <option value="png" selected>PNG</option>
-                            <option value="svg">SVG (vector, post-FX off)</option>
-                        </select>
-                        <div id="exportSvgWarn" style="display:none; margin-top: 8px; font-size: 10px; color: #ffcccc;">Turn off Post-Production Filter to export SVG.</div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <input type="file" id="loadFile" style="display:none" accept=".json">
@@ -964,9 +956,84 @@
 
             <div class="control-group">
                 <div class="label-row">
-                    <label>Trail Length (Fade) <span class="val-badge" id="val-trailLength">68</span></label>
+                    <label>Trail Length (Fade) <span class="val-badge" id="val-trailLength">70</span></label>
                 </div>
-                <input type="range" class="slider ui-input" id="trailLength" min="1" max="150" value="68">
+                <input type="range" class="slider ui-input" id="trailLength" min="0" max="100" value="70">
+            </div>
+        </div>
+
+        <!-- EXPORT PANEL -->
+        <div id="panel-export" class="tab-panel">
+            <div class="control-group">
+                <label>Format</label>
+                <select id="exportFormatTab" class="ui-input">
+                    <option value="png" selected>PNG Image</option>
+                    <option value="svg">SVG Vector</option>
+                    <option value="webm">WebM Video</option>
+                </select>
+            </div>
+
+            <!-- PNG Options -->
+            <div id="opts-png" class="export-opts">
+                <div class="control-group">
+                    <div class="label-row">
+                        <label>Output Size (Shorter Side px) <span class="val-badge" id="val-exportPngSize">2400</span></label>
+                    </div>
+                    <input type="range" id="exportPngSize" class="slider" min="500" max="8000" step="100" value="2400">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                        <span style="font-size: 10px; color: var(--text-muted);">Scales the current render density to this final pixel size.</span>
+                        <span style="font-size: 11px; font-weight: 700; color: var(--accent);" id="res-exportPng">2400 × 4800 px</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SVG Options -->
+            <div id="opts-svg" class="export-opts" style="display:none;">
+                <div class="control-group">
+                    <label>SVG Mode</label>
+                    <select id="exportSvgType" class="ui-input">
+                        <option value="clean" selected>Clean Vector (Shapes only)</option>
+                        <option value="dither">Vector + Dither</option>
+                    </select>
+                    <span id="svg-dither-warn" style="display:none; font-size: 10px; color: #ffcccc; margin-top: 4px;">Warning: Vector+Dither can generate massive files (>50MB) and may crash vector editors. Keep density low.</span>
+                </div>
+            </div>
+
+            <!-- WebM Options -->
+            <div id="opts-webm" class="export-opts" style="display:none;">
+                <div class="control-group">
+                    <div class="label-row">
+                        <label>Output Size (Shorter Side px) <span class="val-badge" id="val-exportWebmSize">1080</span></label>
+                    </div>
+                    <input type="range" id="exportWebmSize" class="slider" min="500" max="4000" step="100" value="1080">
+                    <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: -6px;">
+                        <span style="font-size: 11px; font-weight: 700; color: var(--accent);" id="res-exportWebm">1080 × 2160 px</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label>Duration (seconds) <span class="val-badge" id="val-exportWebmDuration">5</span></label>
+                    </div>
+                    <input type="range" id="exportWebmDuration" class="slider" min="1" max="60" value="5">
+                </div>
+                <div class="control-group">
+                    <label>Framerate</label>
+                    <select id="exportWebmFps" class="ui-input">
+                        <option value="12">12 FPS</option>
+                        <option value="24">24 FPS</option>
+                        <option value="60" selected>60 FPS</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="tab-btn" id="doExportBtn" style="background-color: var(--accent); border-color: var(--accent); width: 100%; justify-content: center; margin-top: 10px;">Export PNG</button>
+
+            <!-- Export Progress Overlay -->
+            <div id="export-progress" style="display:none; flex-direction:column; gap:8px; margin-top: 10px;">
+                <div style="font-size:10px; color:var(--text-muted); text-align:center;" id="export-status-text">Rendering...</div>
+                <div style="width:100%; height:4px; background:#333; border-radius:2px; overflow:hidden;">
+                    <div id="export-progress-bar" style="width:0%; height:100%; background:var(--accent);"></div>
+                </div>
             </div>
         </div>
 
@@ -974,7 +1041,7 @@
 
     <script>
         // --- Global UI Handlers ---
-        const tabs = ['create', 'animate', 'finalise'];
+        const tabs = ['create', 'animate', 'finalise', 'export'];
         function toggleTab(tabId) {
             const btn = document.getElementById(`tab-btn-${tabId}`);
             if (!btn) return;
@@ -1069,9 +1136,9 @@
             ];
             const path2DInstances = pathDefs.map(p => new Path2D(p.d));
 
-            // Render size derived from Export Size slider (shorter side in pixels).
-            function getExportResolution() {
-                const el = document.getElementById('exportSize');
+            // Render density derived from the top bar Density slider
+            function getRenderResolution() {
+                const el = document.getElementById('renderDensity');
                 return el ? parseInt(el.value) : 2400;
             }
             const DUST_BUDGET = 8000;  
@@ -1106,6 +1173,11 @@
             let frameCount = 0;
             let lastFpsTime = performance.now();
             let currentFps = 60;
+
+            // For external export rendering flag
+            window.isExportingWebm = false;
+            window.isExportingSvgDither = false;
+            window.svgDotsList = null;
 
             function fastHash(x, y, seed) {
                 let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + (seed | 0)) | 0;
@@ -1455,9 +1527,9 @@
                 const dotWarpVal = parseFloat(dotWarpRange.value) / 100;
 
                 const scale = (255 / 64) * (1.5 - (density / 100));
-                const radius = Math.max(0.5, (gridSize * 0.5) * dotScaleVal);
-                const rSq = radius * radius;
-                const dotRadiusCeil = Math.ceil(radius);
+                const radiusRaw = Math.max(0.5, (gridSize * 0.5) * dotScaleVal);
+                const rSq = radiusRaw * radiusRaw;
+                const dotRadiusCeil = Math.ceil(radiusRaw);
                 const maxScatter = gridSize * jitterVal * 4.0;
                 const halfGrid = gridSize / 2;
                 const halfW = w / 2;
@@ -1503,9 +1575,10 @@
                         const dyC = y - halfH;
                         const xNorm = dxC / halfW;
                         const yNorm = dyC / halfH;
-                        const edgeDist = Math.max(Math.abs(xNorm), Math.abs(yNorm));
-                        let warpFactor = Math.max(0, (edgeDist - 0.4) * 1.66);
-                        warpFactor = warpFactor * warpFactor * warpFactor * warpFactor;
+                        
+                        // Smoothly target only the corners, avoiding the hard frame cutoff
+                        const cornerProximity = Math.abs(xNorm * yNorm);
+                        const warpFactor = Math.pow(cornerProximity, 2) * 2.5;
 
                         const gravityX = xNorm * warpFactor * dotWarpVal * 150.0;
                         const gravityY = -yNorm * warpFactor * dotWarpVal * 150.0;
@@ -1517,9 +1590,20 @@
                         const finalCx = halfGrid + scatterX;
                         const finalCy = halfGrid + scatterY;
 
-                        const packed = packRGBA(avgR | 0, avgG | 0, avgB | 0, 255);
                         const centerX = x + finalCx;
                         const centerY = y + finalCy;
+
+                        // Used for SVG Export Hook
+                        if (window.isExportingSvgDither && window.svgDotsList) {
+                            window.svgDotsList.push({
+                                cx: centerX.toFixed(2),
+                                cy: centerY.toFixed(2),
+                                r: radiusRaw.toFixed(2),
+                                col: `rgb(${avgR|0},${avgG|0},${avgB|0})`
+                            });
+                        }
+
+                        const packed = packRGBA(avgR | 0, avgG | 0, avgB | 0, 255);
                         const cxI = centerX | 0;
                         const cyI = centerY | 0;
 
@@ -1636,7 +1720,7 @@
                     let x = dust.x[i];
                     let y = dust.y[i];
                     let vx = dust.vx[i];
-                    let vy = dust.vy[i];
+                    let vy = dust.vx[i];
 
                     const cn = curlNoise(x, y, 1);
                     vx = vx * damping + cn.dx * curlAmp * dt;
@@ -1782,7 +1866,8 @@
                 prevSrcData.set(srcData);
 
                 if (trailTog.checked) {
-                    const trailRetention = parseFloat(trailLengthRange.value) / 100;
+                    const trailVal = parseFloat(trailLengthRange.value) / 100;
+                    const trailRetention = 0.5 + (trailVal * 0.49); // Scales 0->0.5, 1->0.99
                     trailCtx.globalCompositeOperation = 'destination-out';
                     trailCtx.fillStyle = `rgba(0, 0, 0, ${Math.max(0, 1.0 - trailRetention)})`;
                     trailCtx.fillRect(0, 0, w, h);
@@ -1808,7 +1893,7 @@
                 if (orientationSel.value === 'vertical') [ratioW, ratioH] = [ratioH, ratioW];
                 const aspect = ratioW / ratioH;
 
-                const EXPORT_RESOLUTION = getExportResolution();
+                const EXPORT_RESOLUTION = getRenderResolution();
                 let W = aspect >= 1 ? EXPORT_RESOLUTION : EXPORT_RESOLUTION * aspect;
                 let H = aspect >= 1 ? EXPORT_RESOLUTION / aspect : EXPORT_RESOLUTION;
 
@@ -1850,7 +1935,12 @@
                 document.getElementById('val-dustInherit').innerText = document.getElementById('dustInherit').value;
                 document.getElementById('val-dustSize').innerText = document.getElementById('dustSize').value;
                 document.getElementById('val-dustBrightness').innerText = document.getElementById('dustBrightness').value;
-                document.getElementById('val-exportSize').innerText = document.getElementById('exportSize').value;
+                
+                // Export Tab Badges
+                document.getElementById('val-renderDensity').innerText = document.getElementById('renderDensity').value;
+                document.getElementById('val-exportPngSize').innerText = document.getElementById('exportPngSize').value;
+                document.getElementById('val-exportWebmSize').innerText = document.getElementById('exportWebmSize').value;
+                document.getElementById('val-exportWebmDuration').innerText = document.getElementById('exportWebmDuration').value;
 
                 document.querySelectorAll('.shape-val').forEach(el => {
                     document.getElementById(el.dataset.target).innerText = el.value;
@@ -1938,6 +2028,8 @@
             }
 
             function animLoop(time) {
+                if (window.isExportingWebm) return;
+
                 frameSeed++;
                 frameCount++;
 
@@ -2034,7 +2126,7 @@
 
             document.getElementById('saveBtn').addEventListener('click', () => {
                 let settings = {};
-                document.querySelectorAll('.ui-input, .gen-input').forEach(el => {
+                document.querySelectorAll('.ui-input, .gen-input, .slider').forEach(el => {
                     if (el.type === 'checkbox') settings[el.id] = el.checked;
                     else settings[el.id] = el.value;
                 });
@@ -2059,6 +2151,10 @@
                         if ('animSlideTog' in settings && !('animSlideXTog' in settings)) {
                             settings.animSlideXTog = settings.animSlideTog;
                             delete settings.animSlideTog;
+                        }
+                        if ('exportSize' in settings && !('renderDensity' in settings)) {
+                            settings.renderDensity = settings.exportSize;
+                            delete settings.exportSize;
                         }
                         for (let id in settings) {
                             const el = document.getElementById(id);
@@ -2144,7 +2240,7 @@
             window.addEventListener('mouseup', () => isDragging = false);
             window.addEventListener('mouseleave', () => isDragging = false);
 
-            const postprodIds = new Set(['postEffect','effectDensity','gridSize','dotScale','dotJitter','dotWarp','trailTog','trailLength','dustLifecycleTog','dustLife','dustDrift','dustReplicate','dustSwirl','dustPull','dustInherit','dustSize','dustBrightness','exportSize','exportFormat']);
+            const postprodIds = new Set(['postEffect','effectDensity','gridSize','dotScale','dotJitter','dotWarp','trailTog','trailLength','dustLifecycleTog','dustLife','dustDrift','dustReplicate','dustSwirl','dustPull','dustInherit','dustSize','dustBrightness']);
             document.querySelectorAll('.ui-input').forEach(input => {
                 if (postprodIds.has(input.id)) return;
                 input.addEventListener('input', () => {
@@ -2158,42 +2254,66 @@
                 });
             });
 
-            const exportPopover = document.getElementById('exportPopover');
-            const exportSettingsBtn = document.getElementById('exportSettingsBtn');
-            const exportFormatSel = document.getElementById('exportFormat');
-            const exportSizeRange = document.getElementById('exportSize');
-            const exportSvgWarn = document.getElementById('exportSvgWarn');
-            const exportBtn = document.getElementById('exportBtn');
-
-            function refreshExportUi() {
-                const fmt = exportFormatSel.value.toUpperCase();
-                exportBtn.textContent = `Export ${fmt}`;
-                const svgDisabled = exportFormatSel.value === 'svg' && postEffectSel.value !== 'none';
-                exportSvgWarn.style.display = svgDisabled ? 'block' : 'none';
-                exportBtn.style.opacity = svgDisabled ? '0.5' : '1';
-                exportBtn.style.pointerEvents = svgDisabled ? 'none' : 'auto';
-            }
-
-            exportSettingsBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                exportPopover.style.display = exportPopover.style.display === 'block' ? 'none' : 'block';
-            });
-            document.addEventListener('click', (e) => {
-                if (exportPopover.style.display === 'block' &&
-                    !exportPopover.contains(e.target) &&
-                    e.target !== exportSettingsBtn) {
-                    exportPopover.style.display = 'none';
-                }
-            });
-            exportFormatSel.addEventListener('change', refreshExportUi);
-            postEffectSel.addEventListener('change', refreshExportUi);
-            exportSizeRange.addEventListener('input', () => {
-                document.getElementById('val-exportSize').innerText = exportSizeRange.value;
+            // Make sure the new top bar Density slider updates graphics
+            document.getElementById('renderDensity').addEventListener('input', () => {
+                document.getElementById('val-renderDensity').innerText = document.getElementById('renderDensity').value;
                 if(!anyAnimating()) updateGraphic(0.016);
             });
-            refreshExportUi();
 
-            function buildSvg() {
+            function updateExportResolutions() {
+                const formatSel = document.getElementById('format');
+                const orientationSel = document.getElementById('orientation');
+                if(!formatSel || !orientationSel) return;
+
+                let [ratioW, ratioH] = formatSel.value.split(':').map(Number);
+                if (orientationSel.value === 'vertical') [ratioW, ratioH] = [ratioH, ratioW];
+                const aspect = ratioW / ratioH;
+
+                const pngSize = parseInt(document.getElementById('exportPngSize').value);
+                const pngW = Math.round(aspect >= 1 ? pngSize : pngSize * aspect);
+                const pngH = Math.round(aspect >= 1 ? pngSize / aspect : pngSize);
+                const resPng = document.getElementById('res-exportPng');
+                if(resPng) resPng.innerText = `${pngW} × ${pngH} px`;
+
+                const webmSize = parseInt(document.getElementById('exportWebmSize').value);
+                const webmW = Math.round(aspect >= 1 ? webmSize : webmSize * aspect);
+                const webmH = Math.round(aspect >= 1 ? webmSize / aspect : webmSize);
+                const resWebm = document.getElementById('res-exportWebm');
+                if(resWebm) resWebm.innerText = `${webmW} × ${webmH} px`;
+            }
+
+            // Update badge text for export options
+            ['exportPngSize', 'exportWebmSize', 'exportWebmDuration'].forEach(id => {
+                document.getElementById(id).addEventListener('input', (e) => {
+                    document.getElementById('val-' + id).innerText = e.target.value;
+                    updateExportResolutions();
+                });
+            });
+
+            document.getElementById('format').addEventListener('change', updateExportResolutions);
+            document.getElementById('orientation').addEventListener('change', updateExportResolutions);
+            
+            // Initial call to set resolutions based on defaults
+            updateExportResolutions();
+
+            // --- EXPORT PANEL LOGIC ---
+            const exportFormatTab = document.getElementById('exportFormatTab');
+            const doExportBtn = document.getElementById('doExportBtn');
+            const exportSvgType = document.getElementById('exportSvgType');
+            
+            exportFormatTab.addEventListener('change', (e) => {
+                const fmt = e.target.value;
+                document.getElementById('opts-png').style.display = fmt === 'png' ? 'block' : 'none';
+                document.getElementById('opts-svg').style.display = fmt === 'svg' ? 'block' : 'none';
+                document.getElementById('opts-webm').style.display = fmt === 'webm' ? 'block' : 'none';
+                doExportBtn.innerText = `Export ${fmt.toUpperCase()}`;
+            });
+
+            exportSvgType.addEventListener('change', (e) => {
+                document.getElementById('svg-dither-warn').style.display = e.target.value === 'dither' ? 'block' : 'none';
+            });
+
+            function buildSvg(isDither) {
                 const W = canvas.width;
                 const H = canvas.height;
 
@@ -2247,6 +2367,16 @@
                 const bgR = parseInt(bgColorPicker.value.slice(1, 3), 16);
                 const bgG = parseInt(bgColorPicker.value.slice(3, 5), 16);
                 const bgB = parseInt(bgColorPicker.value.slice(5, 7), 16);
+
+                let topGrad = ctx.createLinearGradient(0, 0, 0, Math.max(1, peakTop));
+                topGrad.addColorStop(0, cc1); topGrad.addColorStop(stopM1, mix1);
+                topGrad.addColorStop(0.5, cc2); topGrad.addColorStop(stopM2, mix2);
+                topGrad.addColorStop(1, cc3);
+
+                let botGrad = ctx.createLinearGradient(0, H, 0, Math.min(H - 1, H - peakBot));
+                botGrad.addColorStop(0, cc1); botGrad.addColorStop(stopM1, mix1);
+                botGrad.addColorStop(0.5, cc2); botGrad.addColorStop(stopM2, mix2);
+                botGrad.addColorStop(1, cc3);
 
                 function emitObjects(isTopHalf, peakY) {
                     const out = [];
@@ -2402,8 +2532,47 @@
                 const clipTop = `M 0 0 L ${W} 0 L ${W} ${anchorYTop} Q ${cx} ${cyTop} 0 ${anchorYTop} Z`;
                 const clipBot = `M 0 ${H} L ${W} ${H} L ${W} ${anchorYBot} Q ${cx} ${cyBot} 0 ${anchorYBot} Z`;
 
-                const topObjects = emitObjects(true, peakTop);
-                const botObjects = emitObjects(false, H - peakBot);
+                let ditherMarkup = '';
+                let topObjects = '';
+                let botObjects = '';
+
+                if (isDither) {
+                    // Temporarily render just the clean vectors to grab dot data
+                    ctx.fillStyle = `rgb(${bgR},${bgG},${bgB})`;
+                    ctx.fillRect(0, 0, W, H);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0); ctx.lineTo(W, 0); ctx.lineTo(W, anchorYTop);
+                    ctx.quadraticCurveTo(cx, cyTop, 0, anchorYTop);
+                    ctx.closePath(); ctx.clip();
+                    drawSpaceLayer(W, H, topGrad, true, cx, anchorYTop, cyTop, peakTop);
+                    ctx.restore();
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(0, H); ctx.lineTo(W, H); ctx.lineTo(W, anchorYBot);
+                    ctx.quadraticCurveTo(cx, cyBot, 0, anchorYBot);
+                    ctx.closePath(); ctx.clip();
+                    drawSpaceLayer(W, H, botGrad, false, cx, anchorYBot, cyBot, H - peakBot);
+                    ctx.restore();
+
+                    const rawSrcData = ctx.getImageData(0,0,W,H).data;
+                    
+                    window.isExportingSvgDither = true;
+                    window.svgDotsList = [];
+                    renderBayerFullCoverage(W, H, rawSrcData);
+                    window.isExportingSvgDither = false;
+
+                    const dotElements = window.svgDotsList.map(d => `<circle cx="${d.cx}" cy="${d.cy}" r="${d.r}" fill="${d.col}"/>`).join('');
+                    ditherMarkup = `<g id="dither-layer">${dotElements}</g>`;
+                    window.svgDotsList = null;
+
+                    // Ensure canvas goes back to accurate state visually after export routine finishes
+                    requestAnimationFrame(() => updateGraphic(0.016));
+                } else {
+                    topObjects = emitObjects(true, peakTop);
+                    botObjects = emitObjects(false, H - peakBot);
+                }
 
                 return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
@@ -2415,6 +2584,7 @@
     ${p3dDefs}
   </defs>
   <rect width="${W}" height="${H}" fill="rgb(${bgR},${bgG},${bgB})"/>
+  ${isDither ? ditherMarkup : `
   <g clip-path="url(#clipTop)">
     <rect width="${W}" height="${H}" fill="url(#gTop)"/>
     ${topObjects}
@@ -2423,38 +2593,122 @@
     <rect width="${W}" height="${H}" fill="url(#gBot)"/>
     ${botObjects}
   </g>
+  `}
 </svg>`;
             }
 
-            exportBtn.addEventListener('click', () => {
-                const fmt = exportFormatSel.value;
+            doExportBtn.addEventListener('click', async () => {
+                const fmt = exportFormatTab.value;
                 const tag = formatSel.value.replace(':', 'x');
 
-                if (fmt === 'svg') {
-                    if (postEffectSel.value !== 'none') return;
-                    const svgText = buildSvg();
+                if (fmt === 'png') {
+                    const expSize = parseInt(document.getElementById('exportPngSize').value);
+                    let [ratioW, ratioH] = formatSel.value.split(':').map(Number);
+                    if (orientationSel.value === 'vertical') [ratioW, ratioH] = [ratioH, ratioW];
+                    const aspect = ratioW / ratioH;
+                    
+                    const eW = aspect >= 1 ? expSize : expSize * aspect;
+                    const eH = aspect >= 1 ? expSize / aspect : expSize;
+                    
+                    const tmpC = document.createElement('canvas');
+                    tmpC.width = eW; 
+                    tmpC.height = eH;
+                    const tCtx = tmpC.getContext('2d');
+                    tCtx.imageSmoothingEnabled = false; // keep crisp pure scale
+                    tCtx.drawImage(canvas, 0, 0, eW, eH);
+                    
+                    const link = document.createElement('a');
+                    link.download = `landscape-${tag}.png`;
+                    link.href = tmpC.toDataURL('image/png');
+                    link.click();
+                } 
+                else if (fmt === 'svg') {
+                    const isDither = document.getElementById('exportSvgType').value === 'dither';
+                    const svgText = buildSvg(isDither);
                     const blob = new Blob([svgText], { type: 'image/svg+xml' });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
                     link.download = `landscape-${tag}.svg`;
                     link.href = url;
-                    document.body.appendChild(link);
                     link.click();
-                    document.body.removeChild(link);
                     setTimeout(() => URL.revokeObjectURL(url), 1000);
-                } else {
-                    const link = document.createElement('a');
-                    link.download = `landscape-${tag}.png`;
-                    link.href = canvas.toDataURL('image/png');
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                } 
+                else if (fmt === 'webm') {
+                    const expSize = parseInt(document.getElementById('exportWebmSize').value);
+                    const duration = parseInt(document.getElementById('exportWebmDuration').value);
+                    const fps = parseInt(document.getElementById('exportWebmFps').value);
+                    
+                    document.getElementById('export-progress').style.display = 'flex';
+                    doExportBtn.style.opacity = '0.5';
+                    doExportBtn.style.pointerEvents = 'none';
+                    document.getElementById('export-status-text').innerText = 'Preparing Context...';
+                    
+                    // Halt live loop and modify canvas resolution for recording
+                    window.isExportingWebm = true;
+                    const originalDensity = parseInt(document.getElementById('renderDensity').value);
+                    document.getElementById('renderDensity').value = expSize;
+                    
+                    updateGraphic(0);
+                    // Let DOM layout and internal buffers stabilize
+                    await new Promise(r => requestAnimationFrame(r));
+                    
+                    const stream = canvas.captureStream(fps);
+                    let mime = 'video/webm; codecs=vp9';
+                    if (!MediaRecorder.isTypeSupported(mime)) mime = 'video/webm';
+                    
+                    const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 16000000 });
+                    const chunks = [];
+                    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+                    
+                    recorder.onstop = () => {
+                        const blob = new Blob(chunks, { type: mime });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.download = `landscape-${tag}.webm`;
+                        link.href = url;
+                        link.click();
+                        
+                        // Restore Live state
+                        document.getElementById('renderDensity').value = originalDensity;
+                        window.isExportingWebm = false;
+                        updateGraphic(0);
+                        animFrameReq = requestAnimationFrame(animLoop);
+                        
+                        document.getElementById('export-progress').style.display = 'none';
+                        doExportBtn.style.opacity = '1';
+                        doExportBtn.style.pointerEvents = 'auto';
+                    };
+                    
+                    const totalFrames = duration * fps;
+                    const dtFixed = 1 / fps;
+                    const track = stream.getVideoTracks()[0];
+                    
+                    recorder.start();
+                    document.getElementById('export-status-text').innerText = 'Rendering frames...';
+
+                    for (let i = 0; i <= totalFrames; i++) {
+                        const start = performance.now();
+                        
+                        if (animState.dive) phaseDive += (animSpeed / 50) * 0.2 * dtFixed;
+                        if (animState.slideX) phaseSlide += (animSpeed / 50) * 0.2 * dtFixed;
+                        if (animState.slideY) phaseSlideY += (animSpeed / 50) * 0.2 * dtFixed;
+                        if (animState.rotate) phaseRotate += (animSpeed / 50) * 0.5 * dtFixed;
+                        
+                        updateGraphic(dtFixed);
+                        if (track && track.requestFrame) track.requestFrame();
+                        
+                        const elapsed = performance.now() - start;
+                        // Delay to match real-time duration required by MediaRecorder for synced playback speeds
+                        const delay = Math.max(0, (1000 / fps) - elapsed);
+                        
+                        document.getElementById('export-progress-bar').style.width = `${(i / totalFrames) * 100}%`;
+                        await new Promise(r => setTimeout(r, delay));
+                    }
+                    recorder.stop();
                 }
             });
 
             window.addEventListener('resize', () => updateGraphic(0.016));
-
-            touchpoint.style.cursor = mousePanTog.checked ? 'crosshair' : 'grab';
 
             initSpaceObjects();
             updateGraphic(0.016);
