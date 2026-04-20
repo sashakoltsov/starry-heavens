@@ -830,9 +830,10 @@
                         <!-- Dynamic Shape Elements Go Here -->
                     </div>
                     
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                        <button class="tab-btn" id="addShapeBtn" style="justify-content: center; border-style: dashed; padding: 12px 6px;">+ Upload SVG</button>
-                        <button class="tab-btn" id="pasteSvgBtn" style="justify-content: center; border-style: dashed; padding: 12px 6px;">+ Paste SVG</button>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+                        <button class="tab-btn" id="addShapeBtn" style="justify-content: center; border-style: dashed; padding: 12px 6px;">+ SVG</button>
+                        <button class="tab-btn" id="pasteSvgBtn" style="justify-content: center; border-style: dashed; padding: 12px 6px;">+ Paste</button>
+                        <button class="tab-btn" id="addPngBtn" style="justify-content: center; border-style: dashed; padding: 12px 6px;">+ PNG</button>
                     </div>
                     
                     <!-- Paste Widget Overlay -->
@@ -845,6 +846,7 @@
                     </div>
 
                     <input type="file" id="addShapeFile" accept=".svg" style="display:none;">
+                    <input type="file" id="addPngFile" accept=".png,.jpg,.jpeg" style="display:none;">
                 </div>
             </details>
 
@@ -1261,6 +1263,32 @@
         }
 
         function updateShapeCache(shape, callback) {
+            if (shape.isImage) {
+                const img = new Image();
+                img.onload = () => {
+                    let maxDim = Math.max(img.width, img.height) || 1;
+                    let scale = 512 / maxDim;
+                    let w = img.width * scale;
+                    let h = img.height * scale;
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 512;
+                    canvas.height = 512;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 256 - w/2, 256 - h/2, w, h);
+                    
+                    shape.canvas = canvas;
+                    shape.ready = true;
+                    
+                    const prevImg = document.getElementById('preview-' + shape.id);
+                    if (prevImg) prevImg.src = shape.originalImage;
+
+                    if (callback) callback();
+                };
+                img.src = shape.originalImage;
+                return;
+            }
+
             const svgStr = getModifiedSVG(shape);
             shape.modifiedSvg = svgStr;
             const blob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
@@ -1294,35 +1322,36 @@
             const container = document.getElementById('shapes-list');
             container.innerHTML = '';
             shapes.forEach((shape, i) => {
-                const previewUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(shape.modifiedSvg || shape.originalSvg)));
+                const isImg = shape.isImage;
+                const previewUrl = isImg ? shape.originalImage : 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(shape.modifiedSvg || shape.originalSvg)));
                 const box = document.createElement('div');
                 box.className = 'layer-box';
-                box.style.borderLeft = '3px solid ' + (shape.hasCustomFill ? shape.customFill : '#555');
+                box.style.borderLeft = '3px solid ' + (isImg ? '#46ABDD' : (shape.hasCustomFill ? shape.customFill : '#555'));
                 box.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                         <div style="display:flex; align-items:center; gap:8px;">
                             <img id="preview-${shape.id}" src="${previewUrl}" style="width:28px; height:28px; background:#000; border-radius:4px; object-fit:contain; border:1px solid #444;">
-                            <h4 style="margin:0;">${shape.custom ? 'Custom Shape' : 'Shape ' + (i+1)}</h4>
+                            <h4 style="margin:0;">${shape.custom ? (isImg ? 'Custom Image' : 'Custom Shape') : 'Shape ' + (i+1)}</h4>
                         </div>
                         <button class="icon-btn del-shape" data-idx="${i}" style="width:24px;height:24px;background:#444;" ${shapes.length <= 1 ? 'disabled' : ''} title="Remove Shape">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
                     </div>
-                    <div class="control-group">
+                    <div class="control-group" style="display: ${isImg ? 'none' : 'flex'};">
                         <div class="label-row">
                             <label>Fill</label>
                             <div style="display:flex; gap:6px; align-items:center;">
-                                <input type="color" class="circle-picker small-picker shape-fill-color" data-idx="${i}" value="${shape.customFill}">
+                                <input type="color" class="circle-picker small-picker shape-fill-color" data-idx="${i}" value="${shape.customFill || '#ffffff'}">
                                 <button class="clear-fill-btn" data-idx="${i}" style="background:#444; border:1px solid #555; color:#fff; border-radius:4px; font-size:9px; padding:2px 6px; cursor:pointer;" title="Revert to original or global override">CLEAR</button>
                             </div>
                         </div>
                     </div>
-                    <div class="control-group">
+                    <div class="control-group" style="display: ${isImg ? 'none' : 'flex'};">
                         <div class="label-row">
                             <label>Stroke <input type="checkbox" class="shape-stroke-tog ui-input" data-idx="${i}" ${shape.strokeTog?'checked':''}></label>
                             <div style="display:flex; gap:6px; align-items:center;">
-                                <input type="color" class="circle-picker small-picker shape-stroke-color" data-idx="${i}" value="${shape.strokeColor}">
-                                <input type="range" class="shape-stroke-weight slider" data-idx="${i}" min="1" max="20" value="${shape.strokeWeight}" style="width:50px;">
+                                <input type="color" class="circle-picker small-picker shape-stroke-color" data-idx="${i}" value="${shape.strokeColor || '#ffffff'}">
+                                <input type="range" class="shape-stroke-weight slider" data-idx="${i}" min="1" max="20" value="${shape.strokeWeight || 2}" style="width:50px;">
                             </div>
                         </div>
                     </div>
@@ -1330,7 +1359,7 @@
                         <div class="label-row"><label>Scale (%) <span class="val-badge" id="val-shape-size-${i}">${shape.relativeSize}</span></label></div>
                         <input type="range" class="shape-size slider" data-idx="${i}" min="10" max="300" value="${shape.relativeSize}">
                     </div>
-                    <div class="control-group">
+                    <div class="control-group" style="display: ${isImg ? 'none' : 'flex'};">
                         <div class="label-row"><label>Mix Weight <span class="val-badge" id="val-shape-weight-${i}">${shape.weight}</span></label></div>
                         <input type="range" class="shape-weight slider" data-idx="${i}" min="0" max="100" value="${shape.weight}">
                     </div>
@@ -1338,6 +1367,7 @@
                 container.appendChild(box);
             });
             document.getElementById('addShapeBtn').disabled = shapes.length >= 10;
+            document.getElementById('addPngBtn').disabled = shapes.length >= 10;
             document.getElementById('pasteSvgBtn').disabled = shapes.length >= 10;
         }
 
@@ -1355,6 +1385,26 @@
                 weight: 20,
                 ready: false,
                 viewBox: parseSvgViewBox(svgString)
+            };
+            shapes.push(newShape);
+            updateShapeCache(newShape, () => {
+                renderShapeUI();
+                if (typeof window.initSpaceObjects === 'function') {
+                    window.initSpaceObjects();
+                    window.triggerGraphicUpdate();
+                }
+            });
+        }
+
+        function addNewImageShape(dataUrl) {
+            const newShape = {
+                id: 'shape_' + Date.now(),
+                isImage: true,
+                originalImage: dataUrl,
+                custom: true,
+                relativeSize: 100,
+                weight: 20,
+                ready: false
             };
             shapes.push(newShape);
             updateShapeCache(newShape, () => {
@@ -1506,6 +1556,18 @@
                     addNewShape(processedSvg);
                 };
                 reader.readAsText(file);
+                e.target.value = '';
+            });
+
+            document.getElementById('addPngBtn').addEventListener('click', () => document.getElementById('addPngFile').click());
+            document.getElementById('addPngFile').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    addNewImageShape(ev.target.result);
+                };
+                reader.readAsDataURL(file);
                 e.target.value = '';
             });
 
@@ -2371,11 +2433,20 @@
                     else settings[el.id] = el.value;
                 });
                 
-                settings.shapes = shapes.map(s => ({
-                    id: s.id, originalSvg: s.originalSvg, custom: s.custom, hasCustomFill: s.hasCustomFill,
-                    customFill: s.customFill, strokeTog: s.strokeTog, strokeColor: s.strokeColor,
-                    strokeWeight: s.strokeWeight, relativeSize: s.relativeSize, weight: s.weight, viewBox: s.viewBox
-                }));
+                settings.shapes = shapes.map(s => {
+                    if (s.isImage) {
+                        return {
+                            id: s.id, isImage: true, originalImage: s.originalImage, custom: s.custom,
+                            relativeSize: s.relativeSize, weight: s.weight
+                        };
+                    } else {
+                        return {
+                            id: s.id, originalSvg: s.originalSvg, custom: s.custom, hasCustomFill: s.hasCustomFill,
+                            customFill: s.customFill, strokeTog: s.strokeTog, strokeColor: s.strokeColor,
+                            strokeWeight: s.strokeWeight, relativeSize: s.relativeSize, weight: s.weight, viewBox: s.viewBox
+                        };
+                    }
+                });
 
                 const blob = new Blob([JSON.stringify(settings, null, 2)], {type: 'application/json'});
                 const link = document.createElement('a');
@@ -2766,9 +2837,9 @@
 
                             const opacityAttr = ditherFilterStr ? opacities[obj.layerId].toFixed(3) : (opacities[obj.layerId] * diveAlphaMultiplier).toFixed(3);
 
-                            const innerSvgMatch = shape.modifiedSvg.match(/<svg[^>]*>([\s\S]*?)<\/svg>/i);
-                            const innerSvg = innerSvgMatch ? innerSvgMatch[1] : '';
-                            const vbToUse = shape.exportViewBox || shape.viewBox;
+                            const innerSvgMatch = shape.isImage ? null : shape.modifiedSvg.match(/<svg[^>]*>([\s\S]*?)<\/svg>/i);
+                            const innerSvg = shape.isImage ? `<image href="${shape.canvas.toDataURL('image/png')}" width="512" height="512" />` : (innerSvgMatch ? innerSvgMatch[1] : '');
+                            const vbToUse = shape.isImage ? "0 0 512 512" : (shape.exportViewBox || shape.viewBox);
 
                             out.push(`<g transform="${transforms.join(' ')}" opacity="${opacityAttr}"${ditherFilterStr}>`);
                             out.push(`<svg x="-256" y="-256" width="512" height="512" viewBox="${vbToUse}" preserveAspectRatio="xMidYMid meet" overflow="visible">`);
