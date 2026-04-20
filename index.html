@@ -615,6 +615,41 @@
             text-align: right;
             font-family: monospace;
         }
+        
+        /* --- Preset Selector --- */
+        .ui-preset-sel {
+            width: 140px;
+            background: var(--bg-panel);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid #444;
+            color: var(--text-main);
+            padding: 0 16px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            letter-spacing: 0.5px;
+            height: 40px;
+            box-sizing: border-box;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23aaaaaa%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px top 50%;
+            background-size: 8px auto;
+        }
+        .ui-preset-sel:hover {
+            background-color: rgba(40, 40, 40, 0.95);
+        }
+        .ui-preset-sel option {
+            background: #2a2a2a;
+            color: #fff;
+        }
 
     </style>
 </head>
@@ -691,6 +726,19 @@
             <button class="tab-btn icon-btn" id="loadBtn" title="Load Settings (JSON)">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
             </button>
+            <select id="presetSelector" class="ui-preset-sel">
+                <option value="" disabled selected>Presets</option>
+                <option value="Default">0 Default</option>
+                <option value="Schematic">0 Schematic</option>
+                <option value="Hard">01 Hard</option>
+                <option value="Practice">02 Practice</option>
+                <option value="Experiment">03 Experiment</option>
+                <option value="Dots & Stacks">Dots & Stacks</option>
+                <option value="Filled">Filled</option>
+                <option value="Hard shapes (retro)">Hard shapes (retro)</option>
+                <option value="Sharp rect">Sharp rect</option>
+                <option value="Vertical rotate">Vertical rotate</option>
+            </select>
         </div>
 
         <input type="file" id="loadFile" style="display:none" accept=".json">
@@ -1157,6 +1205,19 @@
           "diveDitherTog": false,
           "globalFillTog": false, "globalFillColor": "#0000ff",
           "globalStrokeTog": false, "globalStrokeColor": "#ffffff", "globalStrokeWeight": "2"
+        };
+        
+        const PRESETS = {
+            "Default": { "visualZoom": "86", "renderDensity": "3600", "format": "16:9", "orientation": "horizontal", "hCurve": "68", "edgePinch": "28", "dive": "95", "reflectTog": true, "bgColor": "#000000", "c1": "#000000", "m1": "50", "c2": "#0f0500", "m2": "50", "c3": "#291047", "totalCount": "141", "noise": "20", "wFar": "73", "sFar": "18", "snFar": "20", "oFar": "100", "wMid": "36", "sMid": "71", "snMid": "44", "oMid": "100", "wClose": "28", "sClose": "147", "snClose": "48", "oClose": "100" },
+            "Schematic": { "visualZoom": "100", "renderDensity": "2300", "format": "16:9", "orientation": "horizontal", "hCurve": "65", "edgePinch": "55", "dive": "100", "reflectTog": true, "bgColor": "#000000", "c1": "#000000", "m1": "50", "c2": "#050c2e", "m2": "50", "c3": "#1b004d", "totalCount": "203", "noise": "42", "globalFillTog": true, "globalFillColor": "#4000ce", "wFar": "65", "sFar": "18", "snFar": "20", "oFar": "55", "wMid": "48", "sMid": "71", "snMid": "44", "oMid": "54", "wClose": "9", "sClose": "107", "snClose": "48", "oClose": "100" },
+            "Hard": { "visualZoom": "86", "renderDensity": "3600", "format": "4:5", "orientation": "vertical", "hCurve": "68", "edgePinch": "28", "dive": "95", "reflectTog": true, "bgColor": "#000000", "c1": "#1f004d", "m1": "50", "c2": "#28008f", "m2": "68", "c3": "#c64e39", "totalCount": "141", "noise": "20", "wFar": "73", "sFar": "29", "snFar": "20", "oFar": "100", "wMid": "36", "sMid": "71", "snMid": "44", "oMid": "100", "wClose": "28", "sClose": "147", "snClose": "48", "oClose": "100" },
+            "Practice": { "visualZoom": "86", "renderDensity": "3600", "format": "3:4", "orientation": "vertical", "hCurve": "75", "edgePinch": "75", "dive": "91", "reflectTog": true, "bgColor": "#000000", "c1": "#000000", "m1": "45", "c2": "#330000", "m2": "59", "c3": "#00246b", "totalCount": "426", "noise": "55", "wFar": "100", "sFar": "12", "snFar": "20", "oFar": "100", "wMid": "18", "sMid": "37", "snMid": "26", "oMid": "100", "wClose": "14", "sClose": "200", "snClose": "14", "oClose": "100" },
+            "Experiment": { "panX": "-1", "panY": "19", "visualZoom": "86", "renderDensity": "3600", "format": "2:3", "orientation": "vertical", "hCurve": "22", "edgePinch": "29", "dive": "92", "reflectTog": true, "bgColor": "#000000", "c1": "#000000", "m1": "45", "c2": "#300033", "m2": "59", "c3": "#6b2000", "totalCount": "426", "noise": "55", "wFar": "100", "sFar": "12", "snFar": "20", "oFar": "100", "wMid": "18", "sMid": "37", "snMid": "26", "oMid": "100", "wClose": "14", "sClose": "200", "snClose": "14", "oClose": "100" },
+            "Dots & Stacks": { "panX": "0", "panY": "0", "visualZoom": "100", "renderDensity": "2400", "format": "16:9", "orientation": "horizontal", "hCurve": "16", "edgePinch": "0", "dive": "100", "reflectTog": true, "bgColor": "#000000", "c1": "#000000", "m1": "50", "c2": "#1a0f0a", "m2": "50", "c3": "#140f12", "totalCount": "127", "noise": "24", "wFar": "73", "sFar": "18", "snFar": "20", "oFar": "100", "wMid": "36", "sMid": "71", "snMid": "44", "oMid": "100", "wClose": "28", "sClose": "147", "snClose": "48", "oClose": "100" },
+            "Filled": { "panX": "0", "panY": "0", "visualZoom": "86", "renderDensity": "2000", "format": "1:2", "orientation": "horizontal", "hCurve": "39", "edgePinch": "0", "dive": "100", "reflectTog": true, "bgColor": "#000000", "c1": "#150505", "m1": "50", "c2": "#330f00", "m2": "69", "c3": "#2588b6", "totalCount": "106", "noise": "16", "wFar": "0", "sFar": "18", "snFar": "20", "oFar": "0", "wMid": "0", "sMid": "45", "snMid": "44", "oMid": "0", "wClose": "100", "sClose": "200", "snClose": "0", "oClose": "100" },
+            "Hard shapes (retro)": { "panX": "0", "panY": "0", "visualZoom": "50", "renderDensity": "1600", "format": "16:9", "orientation": "horizontal", "hCurve": "55", "edgePinch": "55", "dive": "100", "reflectTog": true, "bgColor": "#000000", "c1": "#000000", "m1": "50", "c2": "#500085", "m2": "69", "c3": "#db6a00", "totalCount": "171", "noise": "47", "wFar": "73", "sFar": "18", "snFar": "20", "oFar": "100", "wMid": "36", "sMid": "71", "snMid": "44", "oMid": "100", "wClose": "28", "sClose": "147", "snClose": "48", "oClose": "100" },
+            "Sharp rect": { "panX": "0", "panY": "0", "visualZoom": "86", "renderDensity": "2000", "format": "1:2", "orientation": "horizontal", "hCurve": "39", "edgePinch": "0", "dive": "81", "reflectTog": true, "bgColor": "#000000", "c1": "#150505", "m1": "50", "c2": "#330f00", "m2": "69", "c3": "#2588b6", "totalCount": "65", "noise": "16", "wFar": "0", "sFar": "18", "snFar": "20", "oFar": "0", "wMid": "0", "sMid": "45", "snMid": "44", "oMid": "0", "wClose": "100", "sClose": "200", "snClose": "0", "oClose": "100" },
+            "Vertical rotate": { "panX": "-1", "panY": "1", "visualZoom": "86", "renderDensity": "2600", "format": "1:2", "orientation": "vertical", "hCurve": "36", "edgePinch": "14", "dive": "100", "reflectTog": true, "bgColor": "#000000", "c1": "#000000", "m1": "45", "c2": "#942c00", "m2": "59", "c3": "#b253a0", "totalCount": "426", "noise": "55", "wFar": "100", "sFar": "12", "snFar": "20", "oFar": "100", "wMid": "18", "sMid": "37", "snMid": "26", "oMid": "100", "wClose": "14", "sClose": "200", "snClose": "14", "oClose": "100" }
         };
 
         const defaultSVGs = [
@@ -2454,6 +2515,80 @@
                 link.download = 'landscape-settings.json';
                 link.click();
             });
+            
+            function applyConfig(settings) {
+                if ('animSlideTog' in settings && !('animSlideXTog' in settings)) {
+                    settings.animSlideXTog = settings.animSlideTog;
+                }
+                if ('exportSize' in settings && !('renderDensity' in settings)) {
+                    settings.renderDensity = settings.exportSize;
+                }
+                if ('animSpeed' in settings && !('animSpeedSlideX' in settings)) {
+                    settings.animSpeedSlideX = settings.animSpeed;
+                    settings.animSpeedDive = settings.animSpeed;
+                    settings.animSpeedRotate = settings.animSpeed;
+                }
+
+                for (let id in settings) {
+                    if (id === 'shapes') continue;
+                    const el = document.getElementById(id);
+                    if (el) {
+                        if (el.type === 'checkbox') el.checked = settings[id];
+                        else el.value = settings[id];
+
+                        if (id === 'animSlideXTog') animState.slideX = el.checked;
+                        if (id === 'animDiveTog') animState.dive = el.checked;
+                        if (id === 'animRotateTog') animState.rotate = el.checked;
+                        if (id === 'slideXDir') slideXDir = el.value === 'left' ? -1 : 1;
+                    }
+                }
+                if (postEffectSel.value === 'stochastic_print') postEffectSel.value = 'dither_bayer';
+
+                document.querySelectorAll('.val-badge').forEach(badge => {
+                    let targetId = badge.id.replace('val-', '');
+                    if (document.getElementById(targetId)) {
+                        if (targetId === 'animScale') badge.innerText = (parseFloat(document.getElementById(targetId).value) / 10).toFixed(1);
+                        else badge.innerText = document.getElementById(targetId).value;
+                    }
+                });
+                if (document.getElementById('zoom-val-text')) {
+                    document.getElementById('zoom-val-text').innerText = (settings.visualZoom || "100") + '%';
+                }
+
+                toggleAnimOpts('slideX', document.getElementById('animSlideXTog').checked);
+                toggleAnimOpts('dive', document.getElementById('animDiveTog').checked);
+                toggleAnimOpts('rotate', document.getElementById('animRotateTog').checked);
+                updateExportResolutions();
+
+                if (settings.shapes && Array.isArray(settings.shapes)) {
+                    shapes = settings.shapes;
+                } else if ('shape0' in settings) {
+                    // Legacy mapping
+                    initDefaultShapes();
+                    shapes[0].weight = parseInt(settings.shape0) || 20; shapes[0].customFill = settings.sc0; shapes[0].hasCustomFill = true;
+                    shapes[1].weight = parseInt(settings.shape1) || 20; shapes[1].customFill = settings.sc1; shapes[1].hasCustomFill = true;
+                    shapes[2].weight = parseInt(settings.shape2) || 20; shapes[2].customFill = settings.sc2; shapes[2].hasCustomFill = true;
+                    shapes[3].weight = parseInt(settings.shape3) || 25; shapes[3].customFill = settings.sc3; shapes[3].hasCustomFill = true;
+                    shapes[4].weight = parseInt(settings.shape4) || 28; shapes[4].customFill = settings.sc4; shapes[4].hasCustomFill = true;
+                } else {
+                    initDefaultShapes();
+                }
+
+                refreshAllShapeCaches();
+                renderShapeUI();
+                window.initSpaceObjects();
+                window.triggerGraphicUpdate();
+            }
+
+            document.getElementById('presetSelector').addEventListener('change', (e) => {
+                const val = e.target.value;
+                if (!val || !PRESETS[val]) return;
+                
+                const newSettings = { ...defaultSettings, ...PRESETS[val] };
+                applyConfig(newSettings);
+                
+                e.target.value = "";
+            });
 
             document.getElementById('loadBtn').addEventListener('click', () => {
                 document.getElementById('loadFile').click();
@@ -2466,67 +2601,7 @@
                 reader.onload = (event) => {
                     try {
                         const settings = JSON.parse(event.target.result);
-                        if ('animSlideTog' in settings && !('animSlideXTog' in settings)) {
-                            settings.animSlideXTog = settings.animSlideTog;
-                        }
-                        if ('exportSize' in settings && !('renderDensity' in settings)) {
-                            settings.renderDensity = settings.exportSize;
-                        }
-                        if ('animSpeed' in settings && !('animSpeedSlideX' in settings)) {
-                            settings.animSpeedSlideX = settings.animSpeed;
-                            settings.animSpeedDive = settings.animSpeed;
-                            settings.animSpeedRotate = settings.animSpeed;
-                        }
-
-                        for (let id in settings) {
-                            if (id === 'shapes') continue;
-                            const el = document.getElementById(id);
-                            if (el) {
-                                if (el.type === 'checkbox') el.checked = settings[id];
-                                else el.value = settings[id];
-
-                                if (id === 'animSlideXTog') animState.slideX = el.checked;
-                                if (id === 'animDiveTog') animState.dive = el.checked;
-                                if (id === 'animRotateTog') animState.rotate = el.checked;
-                                if (id === 'slideXDir') slideXDir = el.value === 'left' ? -1 : 1;
-                            }
-                        }
-                        if (postEffectSel.value === 'stochastic_print') postEffectSel.value = 'dither_bayer';
-
-                        document.querySelectorAll('.val-badge').forEach(badge => {
-                            let targetId = badge.id.replace('val-', '');
-                            if (document.getElementById(targetId)) {
-                                if (targetId === 'animScale') badge.innerText = (parseFloat(document.getElementById(targetId).value) / 10).toFixed(1);
-                                else badge.innerText = document.getElementById(targetId).value;
-                            }
-                        });
-                        if (document.getElementById('zoom-val-text')) {
-                            document.getElementById('zoom-val-text').innerText = (settings.visualZoom || "100") + '%';
-                        }
-
-                        toggleAnimOpts('slideX', document.getElementById('animSlideXTog').checked);
-                        toggleAnimOpts('dive', document.getElementById('animDiveTog').checked);
-                        toggleAnimOpts('rotate', document.getElementById('animRotateTog').checked);
-                        updateExportResolutions();
-
-                        if (settings.shapes && Array.isArray(settings.shapes)) {
-                            shapes = settings.shapes;
-                        } else if ('shape0' in settings) {
-                            // Legacy mapping
-                            initDefaultShapes();
-                            shapes[0].weight = parseInt(settings.shape0) || 20; shapes[0].customFill = settings.sc0; shapes[0].hasCustomFill = true;
-                            shapes[1].weight = parseInt(settings.shape1) || 20; shapes[1].customFill = settings.sc1; shapes[1].hasCustomFill = true;
-                            shapes[2].weight = parseInt(settings.shape2) || 20; shapes[2].customFill = settings.sc2; shapes[2].hasCustomFill = true;
-                            shapes[3].weight = parseInt(settings.shape3) || 25; shapes[3].customFill = settings.sc3; shapes[3].hasCustomFill = true;
-                            shapes[4].weight = parseInt(settings.shape4) || 28; shapes[4].customFill = settings.sc4; shapes[4].hasCustomFill = true;
-                        } else {
-                            initDefaultShapes();
-                        }
-
-                        refreshAllShapeCaches();
-                        renderShapeUI();
-                        window.initSpaceObjects();
-
+                        applyConfig(settings);
                     } catch(err) {
                         const loadBtn = document.getElementById('loadBtn');
                         const origText = loadBtn.innerHTML;
